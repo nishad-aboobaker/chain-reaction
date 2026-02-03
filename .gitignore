@@ -39,3 +39,6 @@ yarn-error.log*
 # Misc
 *.tsbuildinfo
 .eslintcache
+
+# Local Netlify folder
+.netlify
