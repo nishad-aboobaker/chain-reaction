@@ -93,8 +93,14 @@ function getAdjacentPositions(row: number, col: number): Array<{ row: number; co
 export function processExplosions(
     grid: Grid,
     playerId: string,
-    explosionSequence: ExplosionStep[] = []
+    explosionSequence: ExplosionStep[] = [],
+    depth: number = 0
 ): { grid: Grid; explosionSequence: ExplosionStep[] } {
+    // Safety limit to prevent stack overflow
+    if (depth > 100) {
+        console.error('Explosion depth limit exceeded - possible infinite loop detected');
+        return { grid, explosionSequence };
+    }
     let hasExplosions = false;
     const newCells: Cell[][] = grid.cells.map(row => row.map(cell => ({ ...cell })));
 
@@ -161,7 +167,7 @@ export function processExplosions(
 
     // Recursively handle chain reactions
     if (hasExplosions) {
-        return processExplosions(newGrid, playerId, explosionSequence);
+        return processExplosions(newGrid, playerId, explosionSequence, depth + 1);
     }
 
     return { grid: newGrid, explosionSequence };

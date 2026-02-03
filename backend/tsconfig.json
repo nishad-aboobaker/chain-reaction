@@ -1,5 +1,4 @@
 {
-  // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
     "target": "ES2020",
     "module": "commonjs",
@@ -8,6 +7,11 @@
     ],
     "outDir": "./dist",
     "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
@@ -15,8 +19,7 @@
     "moduleResolution": "node",
     "types": [
       "node"
-    ],
-    "sourceMap": true
+    ]
   },
   "include": [
     "src/**/*",

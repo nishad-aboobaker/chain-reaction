@@ -2,20 +2,24 @@ import type { Room, Player, RoomSettings, GameState } from '../../../shared/type
 import { PLAYER_COLORS } from '../../../shared/types';
 import { initializeGameState } from './gameLogic';
 
+import crypto from 'crypto';
+import { validatePlayerName } from '../utils/validators';
+
 // In-memory storage for rooms
 const rooms = new Map<string, Room>();
 
 /**
- * Generate a unique 6-character room code
+ * Generate a unique 6-character room code using cryptographically secure random
  */
 function generateRoomCode(): string {
     const characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Removed confusing characters
-    let code = '';
 
+    let code = '';
     do {
         code = '';
         for (let i = 0; i < 6; i++) {
-            code += characters.charAt(Math.floor(Math.random() * characters.length));
+            const randomIndex = crypto.randomInt(0, characters.length);
+            code += characters.charAt(randomIndex);
         }
     } while (rooms.has(code)); // Ensure uniqueness
 
@@ -29,7 +33,12 @@ export function createRoom(
     hostId: string,
     hostName: string,
     settings: RoomSettings
-): Room {
+): { success: boolean; room?: Room; error?: string } {
+    // Validate player name
+    const nameValidation = validatePlayerName(hostName);
+    if (!nameValidation.valid) {
+        return { success: false, error: nameValidation.error };
+    }
     const code = generateRoomCode();
 
     const host: Player = {
@@ -53,7 +62,7 @@ export function createRoom(
     };
 
     rooms.set(code, room);
-    return room;
+    return { success: true, room };
 }
 
 /**
@@ -71,6 +80,11 @@ export function addPlayerToRoom(
     playerId: string,
     playerName: string
 ): { success: boolean; room?: Room; error?: string } {
+    // Validate player name
+    const nameValidation = validatePlayerName(playerName);
+    if (!nameValidation.valid) {
+        return { success: false, error: nameValidation.error };
+    }
     const room = rooms.get(code);
 
     if (!room) {

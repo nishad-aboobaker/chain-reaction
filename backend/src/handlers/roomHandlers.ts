@@ -13,6 +13,8 @@ import {
     setPlayerReady,
     startGame,
 } from '../services/roomManager';
+import { socketRateLimiter } from '../utils/rateLimiter';
+import { logger } from '../utils/logger';
 
 type TypedSocket = Socket<
     ClientToServerEvents,
@@ -25,10 +27,23 @@ type TypedSocket = Socket<
  * Register room-related event handlers
  */
 export function registerRoomHandlers(socket: TypedSocket, io: Server) {
-    // Create room
+    // Create room with rate limiting
     socket.on('create-room', (playerName: string, settings: RoomSettings, callback) => {
         try {
-            const room = createRoom(socket.id, playerName, settings);
+            // Rate limit: 5 room creations per minute
+            if (!socketRateLimiter.checkLimit(socket.id, 'create-room', 5)) {
+                callback({ success: false, error: 'Too many room creation attempts' });
+                return;
+            }
+
+            const result = createRoom(socket.id, playerName, settings);
+
+            if (!result.success || !result.room) {
+                callback({ success: false, error: result.error });
+                return;
+            }
+
+            const room = result.room;
 
             // Store room code in socket data
             socket.data.roomCode = room.code;
@@ -49,9 +64,14 @@ export function registerRoomHandlers(socket: TypedSocket, io: Server) {
         }
     });
 
-    // Join room
+    // Join room with rate limiting
     socket.on('join-room', (roomCode: string, playerName: string, callback) => {
         try {
+            // Rate limit: 10 join attempts per minute
+            if (!socketRateLimiter.checkLimit(socket.id, 'join-room', 10)) {
+                callback({ success: false, error: 'Too many join attempts' });
+                return;
+            }
             const result = addPlayerToRoom(roomCode.toUpperCase(), socket.id, playerName);
 
             if (!result.success) {

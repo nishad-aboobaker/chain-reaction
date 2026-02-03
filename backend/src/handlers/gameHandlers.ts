@@ -19,6 +19,9 @@ import {
     checkWinCondition,
     nextTurn,
 } from '../services/gameLogic';
+import { sanitizeInput } from '../utils/validators';
+import { socketRateLimiter } from '../utils/rateLimiter';
+import { logger } from '../utils/logger';
 
 type TypedSocket = Socket<
     ClientToServerEvents,
@@ -65,13 +68,19 @@ export function registerGameHandlers(socket: TypedSocket, io: any) {
         }
     });
 
-    // Place orb
+    // Place orb with rate limiting
     socket.on('place-orb', (row: number, col: number) => {
         const roomCode = socket.data.roomCode;
         const playerId = socket.data.playerId;
 
         if (!roomCode || !playerId) {
             socket.emit('error', 'Not in a room');
+            return;
+        }
+
+        // Rate limit: 30 moves per minute
+        if (!socketRateLimiter.checkLimit(playerId, 'place-orb', 30)) {
+            socket.emit('error', 'Too many moves, please slow down');
             return;
         }
 
@@ -100,7 +109,8 @@ export function registerGameHandlers(socket: TypedSocket, io: any) {
             );
 
             if (!validation.valid) {
-                socket.emit('error', validation.error || 'Invalid move');
+                socket.emit('error', 'Invalid move');
+                logger.warn(`Invalid move attempt from ${playerId}: ${validation.error}`);
                 return;
             }
 
@@ -168,12 +178,18 @@ export function registerGameHandlers(socket: TypedSocket, io: any) {
         }
     });
 
-    // Send chat message
+    // Send chat message with sanitization and rate limiting
     socket.on('send-message', (message: string) => {
         const roomCode = socket.data.roomCode;
         const playerId = socket.data.playerId;
 
         if (!roomCode || !playerId) return;
+
+        // Rate limit: 10 messages per minute
+        if (!socketRateLimiter.checkLimit(playerId, 'send-message', 10)) {
+            socket.emit('error', 'Too many messages, please slow down');
+            return;
+        }
 
         try {
             const room = getRoom(roomCode);
@@ -186,7 +202,7 @@ export function registerGameHandlers(socket: TypedSocket, io: any) {
                 id: `${Date.now()}-${playerId}`,
                 playerId,
                 playerName: player.name,
-                message: message.trim(),
+                message: sanitizeInput(message), // Sanitize to prevent XSS
                 timestamp: Date.now(),
                 isSystem: false,
             };
