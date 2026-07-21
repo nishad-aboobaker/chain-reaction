@@ -1,5 +1,6 @@
 import type { GameState, Grid, Cell, Player, ExplosionStep } from '../../../shared/types';
 import { GRID_SIZES } from '../../../shared/types';
+import { logger } from '../utils/logger';
 
 /**
  * Calculate critical mass for a cell based on its position
@@ -98,7 +99,7 @@ export function processExplosions(
 ): { grid: Grid; explosionSequence: ExplosionStep[] } {
     // Safety limit to prevent stack overflow
     if (depth > 100) {
-        console.error('Explosion depth limit exceeded - possible infinite loop detected');
+        logger.error('Explosion depth limit exceeded - possible infinite loop detected');
         return { grid, explosionSequence };
     }
     let hasExplosions = false;

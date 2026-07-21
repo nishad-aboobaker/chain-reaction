@@ -12,12 +12,12 @@ export default function HowToPlay() {
 
                 <div className="text-white/90 space-y-6">
                     <section>
-                        <h3 className="text-2xl font-bold mb-3 text-white">🎯 Objective</h3>
+                        <h3 className="text-2xl font-bold mb-3 text-white"><span aria-hidden="true">🎯</span><span className="sr-only">Objective:</span> Objective</h3>
                         <p>Be the last player with orbs remaining on the board!</p>
                     </section>
 
                     <section>
-                        <h3 className="text-2xl font-bold mb-3 text-white">🎮 How to Play</h3>
+                        <h3 className="text-2xl font-bold mb-3 text-white"><span aria-hidden="true">🎮</span><span className="sr-only">How to Play:</span> How to Play</h3>
                         <ol className="list-decimal list-inside space-y-2 ml-4">
                             <li>Players take turns placing orbs on the grid</li>
                             <li>Click any empty cell or a cell you already own</li>
@@ -28,7 +28,7 @@ export default function HowToPlay() {
                     </section>
 
                     <section>
-                        <h3 className="text-2xl font-bold mb-3 text-white">💥 Critical Mass</h3>
+                        <h3 className="text-2xl font-bold mb-3 text-white"><span aria-hidden="true">💥</span><span className="sr-only">Critical Mass:</span> Critical Mass</h3>
                         <ul className="list-disc list-inside space-y-2 ml-4">
                             <li><strong>Corner cells:</strong> 2 orbs</li>
                             <li><strong>Edge cells:</strong> 3 orbs</li>
@@ -37,7 +37,7 @@ export default function HowToPlay() {
                     </section>
 
                     <section>
-                        <h3 className="text-2xl font-bold mb-3 text-white">📋 Rules</h3>
+                        <h3 className="text-2xl font-bold mb-3 text-white"><span aria-hidden="true">📋</span><span className="sr-only">Rules:</span> Rules</h3>
                         <ul className="list-disc list-inside space-y-2 ml-4">
                             <li>You can only place orbs in empty cells or cells you own</li>
                             <li>Players cannot be eliminated in the first round</li>
@@ -47,7 +47,7 @@ export default function HowToPlay() {
                     </section>
 
                     <section>
-                        <h3 className="text-2xl font-bold mb-3 text-white">💡 Strategy Tips</h3>
+                        <h3 className="text-2xl font-bold mb-3 text-white"><span aria-hidden="true">💡</span><span className="sr-only">Strategy Tips:</span> Strategy Tips</h3>
                         <ul className="list-disc list-inside space-y-2 ml-4">
                             <li>Control corners and edges early - they explode with fewer orbs</li>
                             <li>Set up chain reactions to capture multiple cells at once</li>

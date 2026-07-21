@@ -5,14 +5,14 @@ export default function MainMenu() {
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4">
-            <div className="glass-panel p-12 max-w-2xl w-full text-center">
-                <h1 className="text-6xl font-bold mb-4 bg-gradient-to-r bg-clip-text text-transparent">
+            <div className="glass-panel p-6 md:p-12 max-w-2xl w-full text-center">
+                <h1 className="text-4xl md:text-6xl font-bold mb-2 md:mb-4 bg-gradient-to-r bg-clip-text text-transparent">
                     Chain Reaction
                 </h1>
-                <p className="text-xl text-white/80 mb-8">
+                <p className="text-lg md:text-xl text-white/80 mb-6 md:mb-8">
                     Multiplayer Strategy Game
                 </p>
-                <div className="flex flex-col gap-4 max-w-md mx-auto">
+                <div className="flex flex-col gap-3 md:gap-4 max-w-md mx-auto">
                     <button
                         className="btn-primary"
                         onClick={() => setScreen('create-room')}
@@ -32,7 +32,7 @@ export default function MainMenu() {
                         How to Play
                     </button>
                 </div>
-                <div className="mt-12 text-sm text-white/50">
+                <div className="mt-8 md:mt-12 text-xs md:text-sm text-white/50">
                     <p>Play with 2-8 players across different computers</p>
                 </div>
             </div>

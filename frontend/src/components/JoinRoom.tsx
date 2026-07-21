@@ -4,7 +4,7 @@ import { useMultiplayerStore } from '../store/multiplayerStore';
 import { socketService } from '../services/socketService';
 
 export default function JoinRoom() {
-    const { setScreen, setPlayerName, setRoomCode, playerName } = useAppStore();
+    const { setScreen, setPlayerName, setRoomCode, setPlayerToken, playerName } = useAppStore();
     const initialize = useMultiplayerStore((state) => state.initialize);
     const [localName, setLocalName] = useState(playerName);
     const [code, setCode] = useState('');
@@ -12,7 +12,7 @@ export default function JoinRoom() {
     const [error, setError] = useState('');
 
     const handleJoin = () => {
-        if (localName.trim().length < 3 || code.trim().length !== 6) return;
+        if (localName.trim().length < 2 || code.trim().length !== 6) return;
 
         setIsJoining(true);
         setError('');
@@ -26,6 +26,10 @@ export default function JoinRoom() {
             setIsJoining(false);
 
             if (response.success) {
+                if (response.playerToken) {
+                    setPlayerToken(response.playerToken);
+                    socketService.setAuthToken(response.playerToken);
+                }
                 setScreen('lobby');
             } else {
                 setError(response.error || 'Failed to join room');
@@ -46,10 +50,10 @@ export default function JoinRoom() {
                         <input
                             type="text"
                             className="input-field"
-                            placeholder="Enter your name (3-15 characters)"
+                            placeholder="Enter your name (2-20 characters)"
                             value={localName}
                             onChange={(e) => setLocalName(e.target.value)}
-                            maxLength={15}
+                            maxLength={20}
                             autoFocus
                         />
                     </div>
@@ -76,7 +80,7 @@ export default function JoinRoom() {
                     <button
                         className="btn-primary mt-4"
                         onClick={handleJoin}
-                        disabled={localName.trim().length < 3 || code.trim().length !== 6 || isJoining}
+                        disabled={localName.trim().length < 2 || code.trim().length !== 6 || isJoining}
                     >
                         {isJoining ? 'Joining...' : 'Join Room'}
                     </button>

@@ -60,6 +60,7 @@ export interface Room {
     settings: RoomSettings;
     gameState: GameState | null;
     createdAt: number;
+    lastActivityAt: number;
 }
 
 // Game State
@@ -84,8 +85,8 @@ export interface ChatMessage {
 
 // Socket Events (Client -> Server)
 export interface ClientToServerEvents {
-    'create-room': (playerName: string, settings: RoomSettings, callback: (response: { success: boolean; roomCode?: string; error?: string }) => void) => void;
-    'join-room': (roomCode: string, playerName: string, callback: (response: { success: boolean; error?: string }) => void) => void;
+    'create-room': (playerName: string, settings: RoomSettings, callback: (response: { success: boolean; roomCode?: string; playerToken?: string; error?: string }) => void) => void;
+    'join-room': (roomCode: string, playerName: string, callback: (response: { success: boolean; playerToken?: string; error?: string }) => void) => void;
     'leave-room': () => void;
     'player-ready': (isReady: boolean) => void;
     'start-game': () => void;

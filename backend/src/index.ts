@@ -15,7 +15,7 @@ import { registerRoomHandlers } from './handlers/roomHandlers';
 import { registerGameHandlers } from './handlers/gameHandlers';
 import { validateEnvironment } from './utils/validators';
 import { logger } from './utils/logger';
-import { cleanupOldRooms } from './services/roomManager';
+import { cleanupOldRooms, validatePlayerToken } from './services/roomManager';
 
 // Load environment variables
 dotenv.config();
@@ -75,6 +75,12 @@ app.get('/health', (req: Request, res: Response) => {
     res.json({ status: 'ok', timestamp: Date.now() });
 });
 
+// Global error handler
+app.use((err: Error, req: Request, res: Response, next: any) => {
+    logger.error('Unhandled error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+});
+
 // Track connections per IP to prevent DOS attacks
 const connectionsPerIP = new Map<string, number>();
 
@@ -90,6 +96,17 @@ io.use((socket, next) => {
 
     connectionsPerIP.set(ip, count + 1);
     logger.debug(`IP ${ip} now has ${count + 1} connections`);
+
+    // Restore player identity from auth token if provided
+    const authToken = socket.handshake.auth?.token as string | undefined;
+    if (authToken) {
+        const playerInfo = validatePlayerToken(authToken);
+        if (playerInfo) {
+            socket.data.playerId = playerInfo.playerId;
+            socket.data.roomCode = playerInfo.roomCode;
+            logger.info(`Token auth restored player ${playerInfo.playerId} in room ${playerInfo.roomCode}`);
+        }
+    }
 
     // Cleanup on disconnect
     socket.on('disconnect', () => {

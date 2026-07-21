@@ -134,6 +134,37 @@ body {
   margin-top: 3rem;
 }
 
+/* Responsive Utilities */
+@media (min-width: 768px) {
+  .md\:flex-row {
+    flex-direction: row;
+  }
+
+  .md\:flex-col {
+    flex-direction: column;
+  }
+
+  .md\:w-64 {
+    width: 16rem;
+  }
+
+  .md\:w-auto {
+    width: auto;
+  }
+
+  .md\:mb-0 {
+    margin-bottom: 0;
+  }
+
+  .md\:mt-0 {
+    margin-top: 0;
+  }
+
+  .md\:gap-6 {
+    gap: 1.5rem;
+  }
+}
+
 /* Glass panel effect */
 .glass-panel {
   background: rgba(255, 255, 255, 0.1);
@@ -417,8 +448,16 @@ select.input-field option:checked {
 }
 
 /* Additional utilities for custom components */
-.items-center {
-  align-items: center;
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 
 .z-50 {
@@ -445,8 +484,14 @@ select.input-field option:checked {
 }
 
 /* Hide scrollbar for custom select */
-.hide-scrollbar::-webkit-scrollbar {
+.hide-scrollbar::-webkit-scrollbar,
+.scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Game cell styles */
@@ -586,6 +631,19 @@ select.input-field option:checked {
     box-shadow: 0 0 0 40px rgba(255, 255, 255, 0),
       0 0 0 60px rgba(255, 255, 255, 0);
   }
+}
+
+/* Shake animation for invalid clicks */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+
+.cell-shake {
+  animation: shake 0.4s ease-in-out;
 }
 
 /* Orb trail effect */

@@ -8,6 +8,51 @@ import { validatePlayerName } from '../utils/validators';
 // In-memory storage for rooms
 const rooms = new Map<string, Room>();
 
+// Player tokens: token -> { playerId, roomCode }
+const playerTokens = new Map<string, { playerId: string; roomCode: string }>();
+
+// Turn timers: roomCode -> NodeJS.Timeout
+const turnTimers = new Map<string, NodeJS.Timeout>();
+
+/**
+ * Generate a unique player identity token
+ */
+export function generatePlayerToken(): string {
+    return crypto.randomUUID();
+}
+
+/**
+ * Register a player token
+ */
+export function registerPlayerToken(token: string, playerId: string, roomCode: string): void {
+    playerTokens.set(token, { playerId, roomCode });
+}
+
+/**
+ * Validate a player token and return the associated player info
+ */
+export function validatePlayerToken(token: string): { playerId: string; roomCode: string } | null {
+    return playerTokens.get(token) || null;
+}
+
+/**
+ * Remove a player token
+ */
+export function removePlayerToken(token: string): void {
+    playerTokens.delete(token);
+}
+
+/**
+ * Remove all tokens for a given player in a room
+ */
+export function removePlayerTokens(playerId: string, roomCode: string): void {
+    for (const [token, info] of playerTokens) {
+        if (info.playerId === playerId && info.roomCode === roomCode) {
+            playerTokens.delete(token);
+        }
+    }
+}
+
 /**
  * Generate a unique 6-character room code using cryptographically secure random
  */
@@ -33,7 +78,7 @@ export function createRoom(
     hostId: string,
     hostName: string,
     settings: RoomSettings
-): { success: boolean; room?: Room; error?: string } {
+): { success: boolean; room?: Room; playerToken?: string; error?: string } {
     // Validate player name
     const nameValidation = validatePlayerName(hostName);
     if (!nameValidation.valid) {
@@ -59,10 +104,14 @@ export function createRoom(
         settings,
         gameState: null,
         createdAt: Date.now(),
+        lastActivityAt: Date.now(),
     };
 
+    const playerToken = generatePlayerToken();
+    registerPlayerToken(playerToken, hostId, code);
+
     rooms.set(code, room);
-    return { success: true, room };
+    return { success: true, room, playerToken };
 }
 
 /**
@@ -79,7 +128,7 @@ export function addPlayerToRoom(
     code: string,
     playerId: string,
     playerName: string
-): { success: boolean; room?: Room; error?: string } {
+): { success: boolean; room?: Room; playerToken?: string; error?: string } {
     // Validate player name
     const nameValidation = validatePlayerName(playerName);
     if (!nameValidation.valid) {
@@ -117,10 +166,14 @@ export function addPlayerToRoom(
         orbCount: 0,
     };
 
+    const playerToken = generatePlayerToken();
+    registerPlayerToken(playerToken, playerId, code);
+
     room.players.push(newPlayer);
+    touchRoom(code);
     rooms.set(code, room);
 
-    return { success: true, room };
+    return { success: true, room, playerToken };
 }
 
 /**
@@ -139,8 +192,17 @@ export function removePlayerFromRoom(
     // Remove player
     room.players = room.players.filter(p => p.id !== playerId);
 
+    // Clean up tokens for this player
+    removePlayerTokens(playerId, code);
+
     // If room is empty, mark for deletion
     if (room.players.length === 0) {
+        // Clean up all tokens for this room
+        for (const [token, info] of playerTokens) {
+            if (info.roomCode === code) {
+                playerTokens.delete(token);
+            }
+        }
         rooms.delete(code);
         return { success: true, shouldDeleteRoom: true };
     }
@@ -151,6 +213,7 @@ export function removePlayerFromRoom(
         room.hostId = room.players[0].id;
     }
 
+    touchRoom(code);
     rooms.set(code, room);
     return { success: true, room };
 }
@@ -176,6 +239,7 @@ export function setPlayerReady(
     }
 
     player.isReady = isReady;
+    touchRoom(code);
     rooms.set(code, room);
 
     return { success: true, room };
@@ -202,6 +266,10 @@ export function startGame(
         return { success: false, error: 'Need at least 2 players to start' };
     }
 
+    if (room.gameState !== null) {
+        return { success: false, error: 'Game already started' };
+    }
+
     // Check if all players are ready
     const allReady = room.players.every(p => p.isReady);
     if (!allReady) {
@@ -210,9 +278,20 @@ export function startGame(
 
     // Initialize game state
     room.gameState = initializeGameState(room.players, room.settings.gridSize);
+    touchRoom(code);
     rooms.set(code, room);
 
     return { success: true, room };
+}
+
+/**
+ * Check if auto-start conditions are met (room full + all ready)
+ */
+export function shouldAutoStart(room: Room): boolean {
+    return room.gameState === null &&
+        room.players.length >= 2 &&
+        room.players.length === room.settings.maxPlayers &&
+        room.players.every(p => p.isReady);
 }
 
 /**
@@ -229,6 +308,7 @@ export function updateGameState(
     }
 
     room.gameState = gameState;
+    touchRoom(code);
     rooms.set(code, room);
 
     return { success: true, room };
@@ -248,6 +328,7 @@ export function updatePlayers(
     }
 
     room.players = players;
+    touchRoom(code);
     rooms.set(code, room);
 
     return { success: true, room };
@@ -261,6 +342,38 @@ export function getAllRooms(): Room[] {
 }
 
 /**
+ * Start a turn timer for a room. Auto-skips turn if player doesn't move in time.
+ */
+export function startTurnTimer(code: string, callback: () => void): void {
+    clearTurnTimer(code);
+    const room = rooms.get(code);
+    if (!room || !room.settings.turnTimer) return;
+    const timer = setTimeout(callback, room.settings.turnTimer * 1000);
+    turnTimers.set(code, timer);
+}
+
+/**
+ * Clear the turn timer for a room
+ */
+export function clearTurnTimer(code: string): void {
+    const timer = turnTimers.get(code);
+    if (timer) {
+        clearTimeout(timer);
+        turnTimers.delete(code);
+    }
+}
+
+/**
+ * Update last activity timestamp for a room
+ */
+function touchRoom(code: string): void {
+    const room = rooms.get(code);
+    if (room) {
+        room.lastActivityAt = Date.now();
+    }
+}
+
+/**
  * Clean up old rooms (can be called periodically)
  */
 export function cleanupOldRooms(maxAgeMs: number = 24 * 60 * 60 * 1000): number {
@@ -268,7 +381,7 @@ export function cleanupOldRooms(maxAgeMs: number = 24 * 60 * 60 * 1000): number 
     let deletedCount = 0;
 
     for (const [code, room] of rooms.entries()) {
-        if (now - room.createdAt > maxAgeMs) {
+        if (now - room.lastActivityAt > maxAgeMs) {
             rooms.delete(code);
             deletedCount++;
         }

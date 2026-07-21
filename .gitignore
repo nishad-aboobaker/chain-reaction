@@ -46,3 +46,6 @@ yarn-error.log*
 # Logs
 logs/
 *.log
+
+# Shared compiled artifacts
+shared/types.js

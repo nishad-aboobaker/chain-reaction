@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Room, GameState, ChatMessage, Player, ExplosionStep } from '../../../shared/types';
 import { socketService } from '../services/socketService';
+import { useAppStore } from './appStore';
 
 interface MultiplayerGameStore {
     // State
@@ -38,22 +39,33 @@ export const useMultiplayerStore = create<MultiplayerGameStore>((set, get) => ({
 
     // Initialize Socket.IO listeners
     initialize: () => {
-        // Connect to server
-        socketService.connect();
+        // Remove stale listeners before re-initializing
+        socketService.removeAllListeners();
+        set({
+            room: null,
+            gameState: null,
+            chatMessages: [],
+            error: null,
+            explosionSequence: [],
+        });
 
-        // Store current player ID
+        // Connect to server (with stored token if available for reconnection)
+        const storedToken = useAppStore.getState().playerToken;
+        socketService.connect(storedToken || undefined);
+
+        // Store current player ID from connect event (handles both already-connected and pending)
         const socketId = socketService.getSocketId();
         if (socketId) {
             set({ currentPlayerId: socketId });
         }
+        socketService.onConnect(() => {
+            if (!get().currentPlayerId) {
+                set({ currentPlayerId: socketService.getSocketId() });
+            }
+        });
 
         // Setup listeners
         socketService.onRoomUpdated((room) => {
-            // Update current player ID from socket (in case it wasn't set during initialize)
-            const socketId = socketService.getSocketId();
-            if (socketId && !get().currentPlayerId) {
-                set({ currentPlayerId: socketId });
-            }
             set({ room });
         });
 

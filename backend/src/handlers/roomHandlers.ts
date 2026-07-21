@@ -12,7 +12,12 @@ import {
     removePlayerFromRoom,
     setPlayerReady,
     startGame,
+    getRoom,
+    shouldAutoStart,
+    startTurnTimer,
+    updateGameState,
 } from '../services/roomManager';
+import { nextTurn } from '../services/gameLogic';
 import { socketRateLimiter } from '../utils/rateLimiter';
 import { logger } from '../utils/logger';
 
@@ -22,6 +27,52 @@ type TypedSocket = Socket<
     InterServerEvents,
     SocketData
 >;
+
+/**
+ * Try to auto-start game if room conditions are met
+ */
+function tryAutoStart(roomCode: string, io: Server): void {
+    const room = getRoom(roomCode);
+    if (!room || !shouldAutoStart(room)) return;
+
+    const result = startGame(roomCode, room.hostId);
+    if (!result.success || !result.room) return;
+
+    io.to(roomCode).emit('room-updated', result.room);
+    io.to(roomCode).emit('game-started');
+    io.to(roomCode).emit('game-state-updated', result.room.gameState!);
+
+    const currentPlayer = result.room.players[result.room.gameState!.currentTurnIndex];
+    io.to(roomCode).emit('turn-changed', currentPlayer.id);
+
+    // Start turn timer if configured
+    const roomSettings = result.room.settings;
+    if (roomSettings.turnTimer) {
+        startTurnTimer(roomCode, () => {
+            logger.info(`Turn timer expired in room ${roomCode}, skipping turn`);
+            const expiredRoom = getRoom(roomCode);
+            if (!expiredRoom || !expiredRoom.gameState) return;
+
+            const { currentTurnIndex: nextIdx, roundNumber: nextRound } =
+                nextTurn(expiredRoom.gameState, expiredRoom.players);
+            expiredRoom.gameState.currentTurnIndex = nextIdx;
+            expiredRoom.gameState.roundNumber = nextRound;
+            expiredRoom.gameState.turnStartTime = Date.now();
+            updateGameState(roomCode, expiredRoom.gameState);
+
+            const updatedRoom = getRoom(roomCode);
+            io.to(roomCode).emit('game-state-updated', expiredRoom.gameState);
+            io.to(roomCode).emit('room-updated', updatedRoom!);
+
+            const nextPlayer = expiredRoom.players[nextIdx];
+            io.to(roomCode).emit('turn-changed', nextPlayer.id);
+
+            startTurnTimer(roomCode, () => {});
+        });
+    }
+
+    logger.info(`Auto-started game in room: ${roomCode}`);
+}
 
 /**
  * Register room-related event handlers
@@ -55,11 +106,11 @@ export function registerRoomHandlers(socket: TypedSocket, io: Server) {
             // Emit room update to creator
             socket.emit('room-updated', room);
 
-            callback({ success: true, roomCode: room.code });
+            callback({ success: true, roomCode: room.code, playerToken: result.playerToken });
 
-            console.log(`Room created: ${room.code} by ${playerName}`);
+            logger.info(`Room created: ${room.code} by ${playerName}`);
         } catch (error) {
-            console.error('Error creating room:', error);
+            logger.error('Error creating room:', error);
             callback({ success: false, error: 'Failed to create room' });
         }
     });
@@ -96,35 +147,14 @@ export function registerRoomHandlers(socket: TypedSocket, io: Server) {
                 socket.to(roomCode.toUpperCase()).emit('player-joined', newPlayer);
             }
 
-            callback({ success: true });
+            callback({ success: true, playerToken: result.playerToken });
 
-            console.log(`${playerName} joined room: ${roomCode.toUpperCase()}`);
+            logger.info(`${playerName} joined room: ${roomCode.toUpperCase()}`);
 
             // Auto-start game if room is full and all players are ready
-            if (result.room!.players.length === result.room!.settings.maxPlayers) {
-                const allReady = result.room!.players.every(p => p.isReady);
-
-                if (allReady) {
-                    console.log(`Room ${roomCode.toUpperCase()} is full and all ready, auto-starting game...`);
-
-                    const startResult = startGame(roomCode.toUpperCase(), result.room!.hostId);
-
-                    if (startResult.success && startResult.room) {
-                        // Notify all players that game started
-                        io.to(roomCode.toUpperCase()).emit('room-updated', startResult.room);
-                        io.to(roomCode.toUpperCase()).emit('game-started');
-                        io.to(roomCode.toUpperCase()).emit('game-state-updated', startResult.room.gameState!);
-
-                        // Notify current turn
-                        const currentPlayer = startResult.room.players[startResult.room.gameState!.currentTurnIndex];
-                        io.to(roomCode.toUpperCase()).emit('turn-changed', currentPlayer.id);
-
-                        console.log(`Auto-started game in room: ${roomCode.toUpperCase()}`);
-                    }
-                }
-            }
+            tryAutoStart(roomCode.toUpperCase(), io);
         } catch (error) {
-            console.error('Error joining room:', error);
+            logger.error('Error joining room:', error);
             callback({ success: false, error: 'Failed to join room' });
         }
     });
@@ -152,9 +182,9 @@ export function registerRoomHandlers(socket: TypedSocket, io: Server) {
             socket.data.roomCode = '';
             socket.data.playerId = '';
 
-            console.log(`Player ${playerId} left room: ${roomCode}`);
+            logger.info(`Player ${playerId} left room: ${roomCode}`);
         } catch (error) {
-            console.error('Error leaving room:', error);
+            logger.error('Error leaving room:', error);
         }
     });
 
@@ -173,34 +203,13 @@ export function registerRoomHandlers(socket: TypedSocket, io: Server) {
                 socket.to(roomCode).emit('room-updated', result.room);
                 socket.emit('room-updated', result.room);
 
-                console.log(`Player ${playerId} ready status: ${isReady}`);
+                logger.info(`Player ${playerId} ready status: ${isReady}`);
 
                 // Auto-start game if room is full and all players are ready
-                if (result.room.players.length === result.room.settings.maxPlayers) {
-                    const allReady = result.room.players.every(p => p.isReady);
-
-                    if (allReady) {
-                        console.log(`Room ${roomCode} is full and all ready, auto-starting game...`);
-
-                        const startResult = startGame(roomCode, result.room.hostId);
-
-                        if (startResult.success && startResult.room) {
-                            // Notify all players that game started
-                            io.to(roomCode).emit('room-updated', startResult.room);
-                            io.to(roomCode).emit('game-started');
-                            io.to(roomCode).emit('game-state-updated', startResult.room.gameState!);
-
-                            // Notify current turn
-                            const currentPlayer = startResult.room.players[startResult.room.gameState!.currentTurnIndex];
-                            io.to(roomCode).emit('turn-changed', currentPlayer.id);
-
-                            console.log(`Auto-started game in room: ${roomCode}`);
-                        }
-                    }
-                }
+                tryAutoStart(roomCode, io);
             }
         } catch (error) {
-            console.error('Error setting player ready:', error);
+            logger.error('Error setting player ready:', error);
         }
     });
 
@@ -219,9 +228,9 @@ export function registerRoomHandlers(socket: TypedSocket, io: Server) {
                 socket.to(roomCode).emit('player-left', playerId);
             }
 
-            console.log(`Player ${playerId} disconnected from room: ${roomCode}`);
+            logger.info(`Player ${playerId} disconnected from room: ${roomCode}`);
         } catch (error) {
-            console.error('Error handling disconnect:', error);
+            logger.error('Error handling disconnect:', error);
         }
     });
 }

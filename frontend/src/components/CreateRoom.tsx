@@ -4,18 +4,20 @@ import { useMultiplayerStore } from '../store/multiplayerStore';
 import { socketService } from '../services/socketService';
 import CustomSelect from './CustomSelect';
 import type { RoomSettings } from '../../../shared/types';
+import { GRID_SIZES } from '../../../shared/types';
 
 export default function CreateRoom() {
-    const { setScreen, setPlayerName, setRoomCode, playerName } = useAppStore();
+    const { setScreen, setPlayerName, setRoomCode, setPlayerToken, playerName } = useAppStore();
     const initialize = useMultiplayerStore((state) => state.initialize);
     const [localName, setLocalName] = useState(playerName);
-    const [gridSize, setGridSize] = useState<keyof typeof import('../../../shared/types').GRID_SIZES>('MEDIUM');
-    const [maxPlayers, setMaxPlayers] = useState('4');
+    const [gridSize, setGridSize] = useState<keyof typeof GRID_SIZES>('MEDIUM');
+    const [maxPlayers, setMaxPlayers] = useState(4);
+    const [turnTimer, setTurnTimer] = useState(60);
     const [isCreating, setIsCreating] = useState(false);
     const [error, setError] = useState('');
 
     const handleCreate = () => {
-        if (localName.trim().length < 3) return;
+        if (localName.trim().length < 2) return;
 
         setIsCreating(true);
         setError('');
@@ -26,8 +28,8 @@ export default function CreateRoom() {
 
         const settings: RoomSettings = {
             gridSize,
-            maxPlayers: parseInt(maxPlayers),
-            turnTimer: null,
+            maxPlayers,
+            turnTimer: turnTimer > 0 ? turnTimer : null,
         };
 
         socketService.createRoom(localName.trim(), settings, (response) => {
@@ -35,6 +37,10 @@ export default function CreateRoom() {
 
             if (response.success && response.roomCode) {
                 setRoomCode(response.roomCode);
+                if (response.playerToken) {
+                    setPlayerToken(response.playerToken);
+                    socketService.setAuthToken(response.playerToken);
+                }
                 setScreen('lobby');
             } else {
                 setError(response.error || 'Failed to create room');
@@ -58,6 +64,14 @@ export default function CreateRoom() {
         { value: '8', label: '8 Players' },
     ];
 
+    const turnTimerOptions = [
+        { value: '0', label: 'No Timer' },
+        { value: '30', label: '30 seconds' },
+        { value: '60', label: '60 seconds' },
+        { value: '90', label: '90 seconds' },
+        { value: '120', label: '120 seconds' },
+    ];
+
     return (
         <div className="min-h-screen flex items-center justify-center p-4">
             <div className="glass-panel p-12 max-w-md w-full">
@@ -71,10 +85,10 @@ export default function CreateRoom() {
                         <input
                             type="text"
                             className="input-field"
-                            placeholder="Enter your name (3-15 characters)"
+                            placeholder="Enter your name (2-20 characters)"
                             value={localName}
                             onChange={(e) => setLocalName(e.target.value)}
-                            maxLength={15}
+                            maxLength={20}
                             autoFocus
                         />
                     </div>
@@ -88,9 +102,16 @@ export default function CreateRoom() {
 
                     <CustomSelect
                         label="Max Players"
-                        value={maxPlayers}
+                        value={String(maxPlayers)}
                         options={maxPlayersOptions}
-                        onChange={setMaxPlayers}
+                        onChange={(v) => setMaxPlayers(Number(v))}
+                    />
+
+                    <CustomSelect
+                        label="Turn Timer"
+                        value={String(turnTimer)}
+                        options={turnTimerOptions}
+                        onChange={(v) => setTurnTimer(Number(v))}
                     />
 
                     {error && (
@@ -102,7 +123,7 @@ export default function CreateRoom() {
                     <button
                         className="btn-primary mt-4"
                         onClick={handleCreate}
-                        disabled={localName.trim().length < 3 || isCreating}
+                        disabled={localName.trim().length < 2 || isCreating}
                     >
                         {isCreating ? 'Creating...' : 'Create Room'}
                     </button>

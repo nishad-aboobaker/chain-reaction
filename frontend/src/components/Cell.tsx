@@ -23,8 +23,19 @@ export default function CellComponent({
     isAdding = false,
 }: CellProps) {
     const [particles, setParticles] = useState<Array<{ id: number; tx: number; ty: number }>>([]);
+    const [shake, setShake] = useState(false);
     const canPlace = (!disabled) && (cell.ownerId === null || isCurrentPlayerCell);
     const isCritical = cell.orbCount >= cell.criticalMass - 1 && cell.ownerId !== null && !isExploding;
+
+    const handleClick = () => {
+        if (disabled) return;
+        if (!canPlace) {
+            setShake(true);
+            setTimeout(() => setShake(false), 400);
+            return;
+        }
+        onClick();
+    };
 
     // Create particle burst effect when exploding
     useEffect(() => {
@@ -59,9 +70,9 @@ export default function CellComponent({
 
     return (
         <button
-            onClick={onClick}
-            disabled={!canPlace}
-            className={`cell ${isCritical ? 'cell-critical' : ''} ${isExploding ? 'cell-exploding' : ''}`}
+            onClick={handleClick}
+            aria-disabled={!canPlace}
+            className={`cell ${isCritical ? 'cell-critical' : ''} ${isExploding ? 'cell-exploding' : ''} ${shake ? 'cell-shake' : ''}`}
             style={{
                 backgroundColor: ownerColor ? ownerColor : 'rgba(255, 255, 255, 0.05)',
                 cursor: canPlace ? 'pointer' : 'not-allowed',

@@ -123,7 +123,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
         };
 
         // Handle explosions
-        const explodeCells = (grid: GameCell[][]): GameCell[][] => {
+        const explodeCells = (grid: GameCell[][], depth: number = 0): GameCell[][] => {
+            if (depth > 100) return grid;
             let hasExplosions = false;
             const nextGrid = grid.map(r => r.map(c => ({ ...c })));
 
@@ -172,7 +173,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
             // Recursively handle chain reactions
             if (hasExplosions) {
-                return explodeCells(nextGrid);
+                return explodeCells(nextGrid, depth + 1);
             }
 
             return nextGrid;

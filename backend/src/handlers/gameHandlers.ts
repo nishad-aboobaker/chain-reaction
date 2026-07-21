@@ -1,4 +1,4 @@
-import type { Socket } from 'socket.io';
+import type { Socket, Server } from 'socket.io';
 import type {
     ClientToServerEvents,
     ServerToClientEvents,
@@ -11,6 +11,8 @@ import {
     startGame,
     updateGameState,
     updatePlayers,
+    startTurnTimer,
+    clearTurnTimer,
 } from '../services/roomManager';
 import {
     isValidMove,
@@ -30,10 +32,45 @@ type TypedSocket = Socket<
     SocketData
 >;
 
+type TypedServer = Server<
+    ClientToServerEvents,
+    ServerToClientEvents,
+    InterServerEvents,
+    SocketData
+>;
+
+/**
+ * Handle turn timer expiry — advance to next player
+ */
+function onTurnTimerExpired(roomCode: string, io: TypedServer): void {
+    logger.info(`Turn timer expired in room ${roomCode}, skipping turn`);
+    const currentRoom = getRoom(roomCode);
+    if (!currentRoom || !currentRoom.gameState) return;
+
+    const { currentTurnIndex: nextIdx, roundNumber: nextRound } = nextTurn(
+        currentRoom.gameState,
+        currentRoom.players
+    );
+    currentRoom.gameState.currentTurnIndex = nextIdx;
+    currentRoom.gameState.roundNumber = nextRound;
+    currentRoom.gameState.turnStartTime = Date.now();
+    updateGameState(roomCode, currentRoom.gameState);
+
+    const updatedRoom = getRoom(roomCode);
+    io.to(roomCode).emit('game-state-updated', currentRoom.gameState);
+    io.to(roomCode).emit('room-updated', updatedRoom!);
+
+    const nextPlayer = currentRoom.players[nextIdx];
+    io.to(roomCode).emit('turn-changed', nextPlayer.id);
+
+    // Start timer for the next player
+    startTurnTimer(roomCode, () => onTurnTimerExpired(roomCode, io));
+}
+
 /**
  * Register game-related event handlers
  */
-export function registerGameHandlers(socket: TypedSocket, io: any) {
+export function registerGameHandlers(socket: TypedSocket, io: TypedServer) {
     // Start game
     socket.on('start-game', () => {
         const roomCode = socket.data.roomCode;
@@ -61,9 +98,12 @@ export function registerGameHandlers(socket: TypedSocket, io: any) {
             const currentPlayer = result.room!.players[result.room!.gameState!.currentTurnIndex];
             io.to(roomCode).emit('turn-changed', currentPlayer.id);
 
-            console.log(`Game started in room: ${roomCode}`);
+            // Start turn timer for first player
+            startTurnTimer(roomCode, () => onTurnTimerExpired(roomCode, io));
+
+            logger.info(`Game started in room: ${roomCode}`);
         } catch (error) {
-            console.error('Error starting game:', error);
+            logger.error('Error starting game:', error);
             socket.emit('error', 'Failed to start game');
         }
     });
@@ -126,6 +166,9 @@ export function registerGameHandlers(socket: TypedSocket, io: any) {
             const updatedPlayers = checkPlayerElimination(newGameState, room.players);
             updatePlayers(roomCode, updatedPlayers);
 
+            // Clear turn timer on move
+            clearTurnTimer(roomCode);
+
             // Check win condition
             const { isGameOver, winnerId } = checkWinCondition(newGameState, updatedPlayers);
 
@@ -142,7 +185,7 @@ export function registerGameHandlers(socket: TypedSocket, io: any) {
                 io.to(roomCode).emit('room-updated', finalRoom!);
                 io.to(roomCode).emit('game-over', winnerId);
 
-                console.log(`Game over in room ${roomCode}, winner: ${winnerId}`);
+                logger.info(`Game over in room ${roomCode}, winner: ${winnerId}`);
                 return;
             }
 
@@ -154,6 +197,9 @@ export function registerGameHandlers(socket: TypedSocket, io: any) {
 
             // Update game state
             updateGameState(roomCode, newGameState);
+
+            // Start turn timer for the next player
+            startTurnTimer(roomCode, () => onTurnTimerExpired(roomCode, io));
 
             // Get updated room
             const updatedRoom = getRoom(roomCode);
@@ -171,9 +217,9 @@ export function registerGameHandlers(socket: TypedSocket, io: any) {
             const nextPlayer = updatedPlayers[currentTurnIndex];
             io.to(roomCode).emit('turn-changed', nextPlayer.id);
 
-            console.log(`Move made in room ${roomCode} at (${row}, ${col}) by ${playerId}`);
+            logger.info(`Move made in room ${roomCode} at (${row}, ${col}) by ${playerId}`);
         } catch (error) {
-            console.error('Error placing orb:', error);
+            logger.error('Error placing orb:', error);
             socket.emit('error', 'Failed to place orb');
         }
     });
@@ -209,9 +255,9 @@ export function registerGameHandlers(socket: TypedSocket, io: any) {
 
             io.to(roomCode).emit('chat-message', chatMessage);
 
-            console.log(`Chat in room ${roomCode} from ${player.name}: ${message}`);
+            logger.info(`Chat in room ${roomCode} from ${player.name}: ${message}`);
         } catch (error) {
-            console.error('Error sending message:', error);
+            logger.error('Error sending message:', error);
         }
     });
 }

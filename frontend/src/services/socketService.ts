@@ -15,14 +15,16 @@ type TypedSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 class SocketService {
     private socket: TypedSocket | null = null;
     private listeners: Map<string, Set<(...args: any[]) => void>> = new Map();
+    private connectHandler: (() => void) | null = null;
 
     /**
      * Connect to the Socket.IO server
      */
-    connect() {
+    connect(playerToken?: string) {
         if (this.socket?.connected) return;
 
-        const serverUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+        // Use backend URL in production, same origin (Vite proxy) in dev
+        const serverUrl = import.meta.env.VITE_BACKEND_URL || undefined;
 
         this.socket = io(serverUrl, {
             transports: ['websocket', 'polling'],
@@ -31,7 +33,13 @@ class SocketService {
             reconnectionDelayMax: 5000,
             reconnectionAttempts: 10,
             timeout: 20000,
+            auth: playerToken ? { token: playerToken } : undefined,
         });
+
+        // Update auth for reconnection if token is provided later
+        if (playerToken && this.socket) {
+            (this.socket as any).io.opts.auth = { token: playerToken };
+        }
 
         this.socket.on('connect', () => {
             console.log('Connected to server:', this.socket?.id);
@@ -57,6 +65,16 @@ class SocketService {
             this.socket = null;
         }
         this.listeners.clear();
+        this.connectHandler = null;
+    }
+
+    /**
+     * Update the auth token for reconnection
+     */
+    setAuthToken(token: string): void {
+        if (this.socket) {
+            (this.socket as any).io.opts.auth = { token };
+        }
     }
 
     /**
@@ -204,6 +222,22 @@ class SocketService {
         this.on('explosion-sequence', callback);
     }
 
+    /**
+     * Listen for socket connection (handles async connection)
+     */
+    onConnect(callback: () => void) {
+        this.connectHandler = callback;
+        if (!this.socket) {
+            console.warn('Socket not connected, cannot add connect listener');
+            return;
+        }
+        if (this.socket.connected) {
+            callback();
+        } else {
+            this.socket.on('connect', callback);
+        }
+    }
+
     // ============ Internal Listener Management ============
 
     /**
@@ -253,6 +287,10 @@ class SocketService {
         } else {
             this.socket.removeAllListeners();
             this.listeners.clear();
+            if (this.connectHandler) {
+                this.socket.off('connect', this.connectHandler);
+                this.connectHandler = null;
+            }
         }
     }
 }
