@@ -99,7 +99,7 @@ class SocketService {
     createRoom(
         playerName: string,
         settings: RoomSettings,
-        callback: (response: { success: boolean; roomCode?: string; error?: string }) => void
+        callback: (response: { success: boolean; roomCode?: string; playerToken?: string; error?: string }) => void
     ) {
         this.socket?.emit('create-room', playerName, settings, callback);
     }
@@ -110,7 +110,7 @@ class SocketService {
     joinRoom(
         roomCode: string,
         playerName: string,
-        callback: (response: { success: boolean; error?: string }) => void
+        callback: (response: { success: boolean; playerToken?: string; error?: string }) => void
     ) {
         this.socket?.emit('join-room', roomCode, playerName, callback);
     }

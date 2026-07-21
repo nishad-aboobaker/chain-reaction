@@ -40,7 +40,12 @@ const io = new Server<
     SocketData
 >(httpServer, {
     cors: {
-        origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+        origin: (origin, callback) => {
+            if (!origin) return callback(null, true);
+            if (allowedOrigins.some(o => origin.startsWith(o))) return callback(null, true);
+            if (origin.endsWith('.vercel.app')) return callback(null, true);
+            callback(null, false);
+        },
         methods: ['GET', 'POST'],
         credentials: true,
     },
@@ -67,10 +72,23 @@ const limiter = rateLimit({
 
 app.use(limiter);
 
-// CORS - Restrict to frontend URL only
+// CORS - Allow frontend URLs (comma-separated for multiple origins like Vercel previews)
+const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+
 app.use(
     cors({
-        origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+        origin: (origin, callback) => {
+            // Allow requests with no origin (server-to-server, mobile apps, etc.)
+            if (!origin) return callback(null, true);
+            // Allow if origin is in the allowed list
+            if (allowedOrigins.some(o => origin.startsWith(o))) return callback(null, true);
+            // Allow Vercel preview deployments
+            if (origin.endsWith('.vercel.app')) return callback(null, true);
+            callback(null, false);
+        },
         credentials: true,
         methods: ['GET', 'POST'],
     })
