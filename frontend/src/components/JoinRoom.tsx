@@ -46,7 +46,7 @@ export default function JoinRoom() {
 
                 <div className="flex flex-col gap-4">
                     <div>
-                        <label className="block text-sm mb-2 text-white/80">Your Name</label>
+                        <label className="block text-sm mb-2 text-slate-600">Your Name</label>
                         <input
                             type="text"
                             className="input-field"
@@ -59,7 +59,7 @@ export default function JoinRoom() {
                     </div>
 
                     <div>
-                        <label className="block text-sm mb-2 text-white/80">Room Code</label>
+                        <label className="block text-sm mb-2 text-slate-600">Room Code</label>
                         <input
                             type="text"
                             className="input-field"
@@ -72,7 +72,7 @@ export default function JoinRoom() {
                     </div>
 
                     {error && (
-                        <div className="bg-red-500/20 border border-red-500 rounded-lg p-3 text-red-200 text-sm">
+                        <div className="bg-red-100 border border-red-500 rounded-lg p-3 text-red-700 text-sm">
                             {error}
                         </div>
                     )}

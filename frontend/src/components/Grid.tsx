@@ -44,7 +44,7 @@ export default function Grid() {
     }, [explosionSequence, clearExplosionSequence]);
 
     if (!gameState || !room) {
-        return <div className="text-white text-center">Loading grid...</div>;
+        return <div className="text-slate-800 text-center">Loading grid...</div>;
     }
 
     const { grid } = gameState;

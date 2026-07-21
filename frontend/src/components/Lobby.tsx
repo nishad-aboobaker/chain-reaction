@@ -46,7 +46,7 @@ export default function Lobby() {
         return (
             <div className="min-h-screen flex items-center justify-center p-4">
                 <div className="glass-panel p-12">
-                    <p className="text-white">Loading lobby...</p>
+                    <p className="text-slate-800">Loading lobby...</p>
                 </div>
             </div>
         );
@@ -63,8 +63,8 @@ export default function Lobby() {
                 </h2>
 
                 <div className="text-center mb-6 md:mb-8">
-                    <p className="text-white/60 mb-2">Room Code</p>
-                    <div className="text-4xl md:text-5xl font-bold tracking-widest text-white mb-2">
+                    <p className="text-slate-500 mb-2">Room Code</p>
+                    <div className="text-4xl md:text-5xl font-bold tracking-widest text-slate-800 mb-2">
                         {room.code}
                     </div>
                     <button
@@ -76,7 +76,7 @@ export default function Lobby() {
                 </div>
 
                 <div className="mb-6 md:mb-8">
-                    <h3 className="text-lg md:text-xl font-bold mb-4 text-white">
+                    <h3 className="text-lg md:text-xl font-bold mb-4 text-slate-800">
                         Players ({room.players.length}/{room.settings.maxPlayers})
                     </h3>
                     <div className="space-y-2">
@@ -92,24 +92,24 @@ export default function Lobby() {
                                     />
                                     <span className="font-semibold text-sm md:text-base">{player.name}</span>
                                     {player.isHost && (
-                                        <span className="text-[10px] md:text-xs bg-purple-600 px-2 py-1 rounded">
+                                        <span className="text-[10px] md:text-xs bg-purple-600 text-white px-2 py-1 rounded">
                                             HOST
                                         </span>
                                     )}
                                     {player.id === currentPlayer?.id && (
-                                        <span className="text-[10px] md:text-xs bg-blue-600 px-2 py-1 rounded">
+                                        <span className="text-[10px] md:text-xs bg-blue-600 text-white px-2 py-1 rounded">
                                             YOU
                                         </span>
                                     )}
                                 </div>
-                                <span className={`text-sm ${player.isReady ? "text-green-400" : "text-white/50"}`}>
+                                <span className={`text-sm ${player.isReady ? "text-green-600" : "text-slate-400"}`}>
                                     {player.isReady ? "✓ Ready" : "Not Ready"}
                                 </span>
                             </div>
                         ))}
 
                         {room.players.length < room.settings.maxPlayers && (
-                            <div className="glass-panel p-3 md:p-4 text-center text-white/50 text-sm md:text-base">
+                            <div className="glass-panel p-3 md:p-4 text-center text-slate-400 text-sm md:text-base">
                                 Waiting for players to join...
                             </div>
                         )}
@@ -117,8 +117,8 @@ export default function Lobby() {
                 </div>
 
                 <div className="mb-6">
-                    <h3 className="text-lg md:text-xl font-bold mb-3 text-white">Game Settings</h3>
-                    <div className="glass-panel p-3 md:p-4 space-y-2 text-white/80 text-sm md:text-base">
+                    <h3 className="text-lg md:text-xl font-bold mb-3 text-slate-800">Game Settings</h3>
+                    <div className="glass-panel p-3 md:p-4 space-y-2 text-slate-600 text-sm md:text-base">
                         <div className="flex justify-between">
                             <span>Grid Size:</span>
                             <span className="font-semibold">{room.settings.gridSize}</span>
@@ -156,7 +156,7 @@ export default function Lobby() {
                 </div>
 
                 {isHost() && !canStart && (
-                    <p className="text-center text-xs md:text-sm text-white/60 mb-4">
+                    <p className="text-center text-xs md:text-sm text-slate-500 mb-4">
                         {room.players.length < 2
                             ? 'Need at least 2 players to start'
                             : 'All players must be ready'}

@@ -27,7 +27,7 @@ export default function CustomSelect({ label, value, options, onChange }: Custom
 
     return (
         <div ref={dropdownRef} style={{ position: 'relative' }}>
-            <label className="block text-sm mb-2 text-white/80">{label}</label>
+            <label className="block text-sm mb-2 text-slate-600">{label}</label>
 
             <button
                 type="button"

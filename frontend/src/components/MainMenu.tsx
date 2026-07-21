@@ -9,7 +9,7 @@ export default function MainMenu() {
                 <h1 className="text-4xl md:text-6xl font-bold mb-2 md:mb-4 bg-gradient-to-r bg-clip-text text-transparent">
                     Chain Reaction
                 </h1>
-                <p className="text-lg md:text-xl text-white/80 mb-6 md:mb-8">
+                <p className="text-lg md:text-xl text-slate-600 mb-6 md:mb-8">
                     Multiplayer Strategy Game
                 </p>
                 <div className="flex flex-col gap-3 md:gap-4 max-w-md mx-auto">
@@ -32,7 +32,7 @@ export default function MainMenu() {
                         How to Play
                     </button>
                 </div>
-                <div className="mt-8 md:mt-12 text-xs md:text-sm text-white/50">
+                <div className="mt-8 md:mt-12 text-xs md:text-sm text-slate-400">
                     <p>Play with 2-8 players across different computers</p>
                 </div>
             </div>
