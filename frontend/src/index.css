@@ -79,8 +79,8 @@
 }
 
 @keyframes critical-pulse {
-  0%, 100% { box-shadow: 0 0 15px currentColor, inset 0 0 10px currentColor; }
-  50% { box-shadow: 0 0 30px currentColor, inset 0 0 20px currentColor; }
+  0%, 100% { box-shadow: 0 0 10px currentColor, inset 0 0 8px currentColor; }
+  50% { box-shadow: 0 0 18px currentColor, inset 0 0 14px currentColor; transform: scale(1.02); }
 }
 
 @keyframes particle-burst {

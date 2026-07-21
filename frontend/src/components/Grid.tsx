@@ -73,7 +73,6 @@ export default function Grid() {
                     gridTemplateColumns: `repeat(${grid.cols}, minmax(0, 1fr))`,
                     width: '100%',
                     maxWidth: '850px',
-                    aspectRatio: `${grid.cols} / ${grid.rows}`
                 }}
             >
                 {grid.cells.map((row, rowIndex) =>

@@ -58,14 +58,6 @@ export default function CellComponent({
         }
     }, [isExploding]);
 
-    // Add trail effect when orbs added
-    useEffect(() => {
-        if (isAdding) {
-            const timer = setTimeout(() => {}, 400);
-            return () => clearTimeout(timer);
-        }
-    }, [isAdding]);
-
     // Handle hex to rgb for rgba conversion
     const hexToRgba = (hex: string, alpha: number) => {
         const r = parseInt(hex.slice(1, 3), 16);
@@ -76,17 +68,21 @@ export default function CellComponent({
 
     const bgColor = ownerColor 
         ? hexToRgba(ownerColor, 0.15) 
-        : 'rgba(255, 255, 255, 0.6)';
+        : 'rgba(255, 255, 255, 0.8)'; // Make empty cells more visibly white
 
     const borderColor = ownerColor 
         ? hexToRgba(ownerColor, 0.4) 
         : 'rgba(226, 232, 240, 1)'; // slate-200
 
+    // Set a text color so 'currentColor' in CSS animations picks it up
+    // This fixes the ugly grey/black shadow on critical cells
+    const textColor = ownerColor || 'transparent';
+
     return (
         <button
             onClick={handleClick}
             aria-disabled={!canPlace}
-            className={`cell relative w-full aspect-square rounded-xl md:rounded-2xl border transition-all duration-300 overflow-visible
+            className={`cell w-full aspect-square rounded-[25%] md:rounded-2xl border transition-all duration-300 overflow-visible relative
                 ${isCritical ? 'cell-critical' : ''} 
                 ${isExploding ? 'cell-exploding z-20' : ''} 
                 ${shake ? 'cell-shake' : ''}
@@ -95,7 +91,8 @@ export default function CellComponent({
             style={{
                 backgroundColor: bgColor,
                 borderColor: borderColor,
-                boxShadow: ownerColor ? `0 4px 20px -2px ${hexToRgba(ownerColor, 0.2)}` : '0 2px 10px -2px rgba(0,0,0,0.05)'
+                color: textColor,
+                boxShadow: ownerColor ? `0 4px 15px -3px ${hexToRgba(ownerColor, 0.3)}` : '0 2px 8px -2px rgba(0,0,0,0.05)'
             }}
             onMouseEnter={(e) => {
                 if (canPlace) {
@@ -124,28 +121,49 @@ export default function CellComponent({
 
             {cell.orbCount > 0 && (
                 <div
-                    className={`absolute inset-0 flex flex-wrap items-center justify-center gap-[2px] md:gap-1 p-1 md:p-2 ${isAdding ? 'orb-adding' : ''}`}
+                    className={`absolute inset-0 flex items-center justify-center p-[10%] ${isAdding ? 'orb-adding' : ''}`}
                 >
-                    {Array.from({ length: Math.min(cell.orbCount, 4) }).map((_, i) => {
-                        // Orb size calculation
-                        let sizeClass = 'w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5';
-                        if (cell.orbCount === 1) {
-                            sizeClass = 'w-5 h-5 md:w-7 md:h-7 lg:w-8 lg:h-8';
-                        } else if (cell.orbCount === 2) {
-                            sizeClass = 'w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6';
-                        }
+                    <div className="w-full h-full relative">
+                        {Array.from({ length: Math.min(cell.orbCount, 4) }).map((_, i) => {
+                            // Orb size calculation
+                            let sizeClass = 'w-[40%] h-[40%]';
+                            if (cell.orbCount === 1) {
+                                sizeClass = 'w-[65%] h-[65%]';
+                            } else if (cell.orbCount === 2) {
+                                sizeClass = 'w-[50%] h-[50%]';
+                            }
+                            
+                            // Positioning
+                            let posStyle: React.CSSProperties = {};
+                            if (cell.orbCount === 1) {
+                                posStyle = { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
+                            } else if (cell.orbCount === 2) {
+                                if (i === 0) posStyle = { top: '35%', left: '35%', transform: 'translate(-50%, -50%)' };
+                                if (i === 1) posStyle = { top: '65%', left: '65%', transform: 'translate(-50%, -50%)' };
+                            } else if (cell.orbCount === 3) {
+                                if (i === 0) posStyle = { top: '30%', left: '50%', transform: 'translate(-50%, -50%)' };
+                                if (i === 1) posStyle = { top: '70%', left: '30%', transform: 'translate(-50%, -50%)' };
+                                if (i === 2) posStyle = { top: '70%', left: '70%', transform: 'translate(-50%, -50%)' };
+                            } else {
+                                if (i === 0) posStyle = { top: '30%', left: '30%', transform: 'translate(-50%, -50%)' };
+                                if (i === 1) posStyle = { top: '30%', left: '70%', transform: 'translate(-50%, -50%)' };
+                                if (i === 2) posStyle = { top: '70%', left: '30%', transform: 'translate(-50%, -50%)' };
+                                if (i === 3) posStyle = { top: '70%', left: '70%', transform: 'translate(-50%, -50%)' };
+                            }
 
-                        return (
-                            <div
-                                key={i}
-                                className={`orb rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.25)] ${sizeClass} transition-all duration-300`}
-                                style={{
-                                    backgroundColor: ownerColor || '#fff',
-                                    backgroundImage: `radial-gradient(circle at 30% 30%, white 0%, ${ownerColor || '#fff'} 70%)`
-                                }}
-                            />
-                        );
-                    })}
+                            return (
+                                <div
+                                    key={i}
+                                    className={`orb absolute rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.3)] ${sizeClass} transition-all duration-300`}
+                                    style={{
+                                        ...posStyle,
+                                        backgroundColor: ownerColor || '#fff',
+                                        backgroundImage: `radial-gradient(circle at 35% 35%, rgba(255,255,255,0.9) 0%, ${ownerColor || '#fff'} 40%, rgba(0,0,0,0.1) 100%)`
+                                    }}
+                                />
+                            );
+                        })}
+                    </div>
                 </div>
             )}
         </button>
