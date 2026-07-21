@@ -46,6 +46,15 @@ const io = new Server<
     },
 });
 
+//ping
+app.get('/ping', (req, res) => {
+  res.status(200).json({
+    message: 'pong',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
 // Security headers
 app.use(helmet());
 
