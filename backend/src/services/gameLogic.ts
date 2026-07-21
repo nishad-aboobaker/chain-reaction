@@ -158,7 +158,7 @@ export function processExplosions(
                     col: adj.col,
                     type: 'add',
                     ownerId,
-                    delay: baseDelay + 150, // Orbs start flying shortly after explode starts
+                    delay: baseDelay, // Spawn flying orbs exactly when the original cell explodes
                     fromRow: row,
                     fromCol: col,
                 });
