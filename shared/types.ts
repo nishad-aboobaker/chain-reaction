@@ -115,6 +115,8 @@ export interface ExplosionStep {
     type: 'add' | 'explode';
     ownerId: string;
     delay: number; // milliseconds
+    fromRow?: number;
+    fromCol?: number;
 }
 
 // Inter-server Events (for scaling)

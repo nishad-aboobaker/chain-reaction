@@ -10,6 +10,8 @@ interface CellProps {
     disabled: boolean;
     isExploding?: boolean;
     isAdding?: boolean;
+    fromRow?: number;
+    fromCol?: number;
 }
 
 export default function CellComponent({
@@ -21,6 +23,8 @@ export default function CellComponent({
     disabled,
     isExploding = false,
     isAdding = false,
+    fromRow,
+    fromCol,
 }: CellProps) {
     const [particles, setParticles] = useState<Array<{ id: number; tx: number; ty: number }>>([]);
     const [shake, setShake] = useState(false);
@@ -121,7 +125,7 @@ export default function CellComponent({
 
             {cell.orbCount > 0 && (
                 <div
-                    className={`absolute inset-0 flex items-center justify-center p-[10%] ${isAdding ? 'orb-adding' : ''}`}
+                    className={`absolute inset-0 flex items-center justify-center p-[10%]`}
                 >
                     <div className="w-full h-full relative">
                         {Array.from({ length: Math.min(cell.orbCount, 4) }).map((_, i) => {
@@ -135,20 +139,40 @@ export default function CellComponent({
                             
                             // Positioning
                             let posStyle: React.CSSProperties = {};
+                            let baseTranslate = 'translate(-50%, -50%)';
+
                             if (cell.orbCount === 1) {
-                                posStyle = { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
+                                posStyle = { top: '50%', left: '50%', transform: baseTranslate };
                             } else if (cell.orbCount === 2) {
-                                if (i === 0) posStyle = { top: '35%', left: '35%', transform: 'translate(-50%, -50%)' };
-                                if (i === 1) posStyle = { top: '65%', left: '65%', transform: 'translate(-50%, -50%)' };
+                                if (i === 0) posStyle = { top: '35%', left: '35%', transform: baseTranslate };
+                                if (i === 1) posStyle = { top: '65%', left: '65%', transform: baseTranslate };
                             } else if (cell.orbCount === 3) {
-                                if (i === 0) posStyle = { top: '30%', left: '50%', transform: 'translate(-50%, -50%)' };
-                                if (i === 1) posStyle = { top: '70%', left: '30%', transform: 'translate(-50%, -50%)' };
-                                if (i === 2) posStyle = { top: '70%', left: '70%', transform: 'translate(-50%, -50%)' };
+                                if (i === 0) posStyle = { top: '30%', left: '50%', transform: baseTranslate };
+                                if (i === 1) posStyle = { top: '70%', left: '30%', transform: baseTranslate };
+                                if (i === 2) posStyle = { top: '70%', left: '70%', transform: baseTranslate };
                             } else {
-                                if (i === 0) posStyle = { top: '30%', left: '30%', transform: 'translate(-50%, -50%)' };
-                                if (i === 1) posStyle = { top: '30%', left: '70%', transform: 'translate(-50%, -50%)' };
-                                if (i === 2) posStyle = { top: '70%', left: '30%', transform: 'translate(-50%, -50%)' };
-                                if (i === 3) posStyle = { top: '70%', left: '70%', transform: 'translate(-50%, -50%)' };
+                                if (i === 0) posStyle = { top: '30%', left: '30%', transform: baseTranslate };
+                                if (i === 1) posStyle = { top: '30%', left: '70%', transform: baseTranslate };
+                                if (i === 2) posStyle = { top: '70%', left: '30%', transform: baseTranslate };
+                                if (i === 3) posStyle = { top: '70%', left: '70%', transform: baseTranslate };
+                            }
+
+                            // Flying animation for the newly added orb
+                            const isNewOrb = isAdding && i === cell.orbCount - 1;
+                            let flyStyle = {};
+                            
+                            if (isNewOrb && fromRow !== undefined && fromCol !== undefined) {
+                                const dx = fromCol - cell.col;
+                                const dy = fromRow - cell.row;
+                                // CSS variables for keyframes
+                                flyStyle = {
+                                    '--fly-dx': `calc(${dx * 150}% - 50%)`,
+                                    '--fly-dy': `calc(${dy * 150}% - 50%)`,
+                                    '--base-translate': baseTranslate,
+                                    animation: 'orb-fly 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards'
+                                };
+                            } else if (isNewOrb) {
+                                flyStyle = { animation: 'orb-add 0.35s ease-out forwards', '--base-translate': baseTranslate };
                             }
 
                             return (
@@ -157,9 +181,10 @@ export default function CellComponent({
                                     className={`orb absolute rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.3)] ${sizeClass} transition-all duration-300`}
                                     style={{
                                         ...posStyle,
+                                        ...flyStyle,
                                         backgroundColor: ownerColor || '#fff',
                                         backgroundImage: `radial-gradient(circle at 35% 35%, rgba(255,255,255,0.9) 0%, ${ownerColor || '#fff'} 40%, rgba(0,0,0,0.1) 100%)`
-                                    }}
+                                    } as React.CSSProperties}
                                 />
                             );
                         })}

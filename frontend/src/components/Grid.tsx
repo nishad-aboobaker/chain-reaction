@@ -5,7 +5,7 @@ import CellComponent from './Cell';
 
 export default function Grid() {
     const { gameState, room, isMyTurn, explosionSequence, clearExplosionSequence } = useMultiplayerStore();
-    const [animatingCells, setAnimatingCells] = useState<Map<string, 'explode' | 'add'>>(new Map());
+    const [animatingCells, setAnimatingCells] = useState<Map<string, { type: 'explode' | 'add', fromRow?: number, fromCol?: number }>>(new Map());
 
     // Process explosion sequence
     useEffect(() => {
@@ -20,7 +20,7 @@ export default function Grid() {
                 setAnimatingCells((prev) => {
                     const next = new Map(prev);
                     const key = `${step.row}-${step.col}`;
-                    next.set(key, step.type);
+                    next.set(key, { type: step.type, fromRow: step.fromRow, fromCol: step.fromCol });
                     return next;
                 });
 
@@ -31,7 +31,7 @@ export default function Grid() {
                         next.delete(`${step.row}-${step.col}`);
                         return next;
                     });
-                }, step.type === 'explode' ? 500 : 400);
+                }, step.type === 'explode' ? 500 : 350);
             }, step.delay);
         });
 
@@ -80,7 +80,7 @@ export default function Grid() {
                         const cellOwner = room.players.find(p => p.id === cell.ownerId);
                         const isCurrentPlayerCell = cell.ownerId === currentPlayer?.id;
                         const cellKey = `${rowIndex}-${colIndex}`;
-                        const animationType = animatingCells.get(cellKey);
+                        const animation = animatingCells.get(cellKey);
 
                         return (
                             <CellComponent
@@ -91,8 +91,10 @@ export default function Grid() {
                                 currentPlayerColor={currentPlayer?.color || null}
                                 ownerColor={cellOwner?.color || null}
                                 disabled={!myTurn || gameState.isGameOver}
-                                isExploding={animationType === 'explode'}
-                                isAdding={animationType === 'add'}
+                                isExploding={animation?.type === 'explode'}
+                                isAdding={animation?.type === 'add'}
+                                fromRow={animation?.fromRow}
+                                fromCol={animation?.fromCol}
                             />
                         );
                     })

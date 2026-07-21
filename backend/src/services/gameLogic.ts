@@ -122,8 +122,8 @@ export function processExplosions(
     for (const explosion of explosions) {
         const { row, col, ownerId } = explosion;
 
-        // Calculate base delay for this explosion (300ms per explosion group)
-        const baseDelay = explosionSequence.length * 80;
+        // Calculate base delay strictly based on chain reaction depth for sequential popping
+        const baseDelay = depth * 500;
 
         // Record explosion for animation
         explosionSequence.push({
@@ -138,7 +138,7 @@ export function processExplosions(
         newCells[row][col].orbCount = 0;
         newCells[row][col].ownerId = null;
 
-        // Distribute orbs to adjacent cells with slight delays
+        // Distribute orbs to adjacent cells
         const adjacent = getAdjacentPositions(row, col);
 
         for (let i = 0; i < adjacent.length; i++) {
@@ -152,13 +152,15 @@ export function processExplosions(
                 newCells[adj.row][adj.col].orbCount += 1;
                 newCells[adj.row][adj.col].ownerId = ownerId;
 
-                // Record orb addition for animation with slight offset from explosion
+                // Record orb addition for animation (flying orb)
                 explosionSequence.push({
                     row: adj.row,
                     col: adj.col,
                     type: 'add',
                     ownerId,
-                    delay: baseDelay + 200 + (i * 50), // Orbs appear after explosion with stagger
+                    delay: baseDelay + 150, // Orbs start flying shortly after explode starts
+                    fromRow: row,
+                    fromCol: col,
                 });
             }
         }
