@@ -112,6 +112,7 @@ export default function CreateRoom() {
                             label="Grid Size"
                             options={gridSizeOptions}
                             value={gridSize}
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             onChange={(val) => setGridSize(val as any)}
                         />
 

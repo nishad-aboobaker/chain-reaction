@@ -9,9 +9,6 @@ interface CellProps {
     ownerColor: string | null;
     disabled: boolean;
     isExploding?: boolean;
-    isAdding?: boolean;
-    fromRow?: number;
-    fromCol?: number;
 }
 
 export default function CellComponent({
@@ -22,9 +19,6 @@ export default function CellComponent({
     ownerColor,
     disabled,
     isExploding = false,
-    isAdding = false,
-    fromRow,
-    fromCol,
 }: CellProps) {
     const [particles, setParticles] = useState<Array<{ id: number; tx: number; ty: number }>>([]);
     const [shake, setShake] = useState(false);
@@ -54,6 +48,7 @@ export default function CellComponent({
                     ty: Math.sin(angle) * distance,
                 });
             }
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setParticles(newParticles);
 
             // Clear particles after animation
@@ -64,6 +59,7 @@ export default function CellComponent({
 
     // Handle hex to rgb for rgba conversion
     const hexToRgba = (hex: string, alpha: number) => {
+        if (!hex || !hex.startsWith('#')) return 'rgba(255, 255, 255, 0.8)';
         const r = parseInt(hex.slice(1, 3), 16);
         const g = parseInt(hex.slice(3, 5), 16);
         const b = parseInt(hex.slice(5, 7), 16);
@@ -72,14 +68,12 @@ export default function CellComponent({
 
     const bgColor = ownerColor 
         ? hexToRgba(ownerColor, 0.15) 
-        : 'rgba(255, 255, 255, 0.8)'; // Make empty cells more visibly white
+        : 'rgba(255, 255, 255, 0.8)';
 
     const borderColor = ownerColor 
         ? hexToRgba(ownerColor, 0.4) 
         : 'rgba(226, 232, 240, 1)'; // slate-200
 
-    // Set a text color so 'currentColor' in CSS animations picks it up
-    // This fixes the ugly grey/black shadow on critical cells
     const textColor = ownerColor || 'transparent';
 
     return (
@@ -124,9 +118,7 @@ export default function CellComponent({
             ))}
 
             {cell.orbCount > 0 && (
-                <div
-                    className={`absolute inset-0 flex items-center justify-center p-[10%]`}
-                >
+                <div className="absolute inset-0 flex items-center justify-center p-[10%]">
                     <div className="w-full h-full relative">
                         {Array.from({ length: Math.min(cell.orbCount, 4) }).map((_, i) => {
                             // Orb size calculation
@@ -139,7 +131,7 @@ export default function CellComponent({
                             
                             // Positioning
                             let posStyle: React.CSSProperties = {};
-                            let baseTranslate = 'translate(-50%, -50%)';
+                            const baseTranslate = 'translate(-50%, -50%)';
 
                             if (cell.orbCount === 1) {
                                 posStyle = { top: '50%', left: '50%', transform: baseTranslate };
@@ -157,34 +149,15 @@ export default function CellComponent({
                                 if (i === 3) posStyle = { top: '70%', left: '70%', transform: baseTranslate };
                             }
 
-                            // Flying animation for the newly added orb
-                            const isNewOrb = isAdding && i === cell.orbCount - 1;
-                            let flyStyle = {};
-                            
-                            if (isNewOrb && fromRow !== undefined && fromCol !== undefined) {
-                                const dx = fromCol - cell.col;
-                                const dy = fromRow - cell.row;
-                                // CSS variables for keyframes
-                                flyStyle = {
-                                    '--fly-dx': `calc(${dx * 150}% - 50%)`,
-                                    '--fly-dy': `calc(${dy * 150}% - 50%)`,
-                                    '--base-translate': baseTranslate,
-                                    animation: 'orb-fly 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards'
-                                };
-                            } else if (isNewOrb) {
-                                flyStyle = { animation: 'orb-add 0.35s ease-out forwards', '--base-translate': baseTranslate };
-                            }
-
                             return (
                                 <div
                                     key={i}
                                     className={`orb absolute rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.3)] ${sizeClass} transition-all duration-300`}
                                     style={{
                                         ...posStyle,
-                                        ...flyStyle,
                                         backgroundColor: ownerColor || '#fff',
                                         backgroundImage: `radial-gradient(circle at 35% 35%, rgba(255,255,255,0.9) 0%, ${ownerColor || '#fff'} 40%, rgba(0,0,0,0.1) 100%)`
-                                    } as React.CSSProperties}
+                                    }}
                                 />
                             );
                         })}
