@@ -4,27 +4,36 @@ import { useMultiplayerStore } from '../store/multiplayerStore';
 import { socketService } from '../services/socketService';
 
 export default function JoinRoom() {
-    const { setScreen, setPlayerName, setRoomCode, setPlayerToken, playerName } = useAppStore();
+    const { setScreen, setPlayerName, setRoomCode, setPlayerToken, playerName, roomCode } = useAppStore();
     const initialize = useMultiplayerStore((state) => state.initialize);
-    const [localName, setLocalName] = useState(playerName);
-    const [code, setCode] = useState('');
-    const [isJoining, setIsJoining] = useState(false);
+    
+    const [name, setName] = useState(playerName);
+    const [code, setCode] = useState(roomCode);
+    const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
-    const handleJoin = () => {
-        if (localName.trim().length < 2 || code.trim().length !== 6) return;
+    const handleJoin = (e: React.FormEvent) => {
+        e.preventDefault();
 
-        setIsJoining(true);
+        if (name.trim().length < 2) {
+            setError('Name must be at least 2 characters');
+            return;
+        }
+
+        if (!code.trim() || code.length !== 6) {
+            setError('Please enter a valid 6-character room code');
+            return;
+        }
+
+        setIsLoading(true);
         setError('');
-        setPlayerName(localName.trim());
+        
+        setPlayerName(name.trim());
         setRoomCode(code.toUpperCase());
-
-        // Initialize socket connection and listeners
         initialize();
 
-        socketService.joinRoom(code.toUpperCase(), localName.trim(), (response) => {
-            setIsJoining(false);
-
+        socketService.joinRoom(code.toUpperCase(), name.trim(), (response) => {
+            setIsLoading(false);
             if (response.success) {
                 if (response.playerToken) {
                     setPlayerToken(response.playerToken);
@@ -38,60 +47,76 @@ export default function JoinRoom() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-4">
-            <div className="glass-panel p-12 max-w-md w-full">
-                <h2 className="text-4xl font-bold mb-8 text-center bg-gradient-to-r bg-clip-text text-transparent">
+        <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+            {/* Background elements */}
+            <div className="absolute top-[-20%] right-[-10%] w-[70%] h-[70%] rounded-full bg-indigo-300/20 blur-[120px] -z-10" />
+            <div className="absolute bottom-[-20%] left-[-10%] w-[70%] h-[70%] rounded-full bg-blue-400/20 blur-[120px] -z-10" />
+
+            <div className="bg-white/80 backdrop-blur-xl border border-white p-8 md:p-12 max-w-xl w-full rounded-[2rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)]">
+                <button
+                    onClick={() => setScreen('menu')}
+                    className="flex items-center text-slate-500 hover:text-indigo-600 transition-colors mb-8 font-medium group cursor-pointer"
+                >
+                    <svg className="w-5 h-5 mr-2 transform group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Back to Menu
+                </button>
+
+                <h2 className="text-4xl font-extrabold mb-8 text-slate-900 tracking-tight">
                     Join Room
                 </h2>
 
-                <div className="flex flex-col gap-4">
+                <form onSubmit={handleJoin} className="space-y-6">
                     <div>
-                        <label className="block text-sm mb-2 text-slate-600">Your Name</label>
+                        <label className="block text-sm font-semibold mb-2 text-slate-700">Your Name</label>
                         <input
                             type="text"
-                            className="input-field"
-                            placeholder="Enter your name (2-20 characters)"
-                            value={localName}
-                            onChange={(e) => setLocalName(e.target.value)}
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
+                            placeholder="Enter your nickname (2-20 chars)"
                             maxLength={20}
-                            autoFocus
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm mb-2 text-slate-600">Room Code</label>
+                        <label className="block text-sm font-semibold mb-2 text-slate-700">Room Code</label>
                         <input
                             type="text"
-                            className="input-field"
-                            placeholder="Enter 6-character room code"
                             value={code}
                             onChange={(e) => setCode(e.target.value.toUpperCase())}
+                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm uppercase tracking-widest font-mono text-lg"
+                            placeholder="6-DIGIT CODE"
                             maxLength={6}
-                            style={{ textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '1.5rem', textAlign: 'center' }}
                         />
                     </div>
 
                     {error && (
-                        <div className="bg-red-100 border border-red-500 rounded-lg p-3 text-red-700 text-sm">
-                            {error}
+                        <div className="bg-red-50 border-l-4 border-red-500 rounded-r-lg p-4 flex items-center">
+                            <span className="text-red-500 mr-2">⚠️</span>
+                            <span className="text-red-700 text-sm font-medium">{error}</span>
                         </div>
                     )}
 
                     <button
-                        className="btn-primary mt-4"
-                        onClick={handleJoin}
-                        disabled={localName.trim().length < 2 || code.trim().length !== 6 || isJoining}
+                        type="submit"
+                        disabled={isLoading || name.trim().length < 2 || code.length !== 6}
+                        className="w-full py-4 mt-8 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-500/30 transition-all duration-300 transform hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:translate-y-0 text-lg flex items-center justify-center cursor-pointer"
                     >
-                        {isJoining ? 'Joining...' : 'Join Room'}
+                        {isLoading ? (
+                            <span className="flex items-center">
+                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Joining...
+                            </span>
+                        ) : (
+                            'Join Game'
+                        )}
                     </button>
-
-                    <button
-                        className="btn-secondary"
-                        onClick={() => setScreen('menu')}
-                    >
-                        Back
-                    </button>
-                </div>
+                </form>
             </div>
         </div>
     );

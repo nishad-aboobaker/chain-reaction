@@ -1,121 +1,32 @@
-import { useState, useRef, useEffect } from 'react';
-
 interface CustomSelectProps {
     label: string;
-    value: string;
     options: { value: string; label: string }[];
+    value: string;
     onChange: (value: string) => void;
 }
 
-export default function CustomSelect({ label, value, options, onChange }: CustomSelectProps) {
-    const [isOpen, setIsOpen] = useState(false);
-    const dropdownRef = useRef<HTMLDivElement>(null);
-
-    // Close dropdown when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setIsOpen(false);
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    const selectedOption = options.find(opt => opt.value === value);
-
+export default function CustomSelect({ label, options, value, onChange }: CustomSelectProps) {
     return (
-        <div ref={dropdownRef} style={{ position: 'relative' }}>
-            <label className="block text-sm mb-2 text-slate-600">{label}</label>
-
-            <button
-                type="button"
-                className="input-field text-left w-full flex justify-between items-center"
-                onClick={() => setIsOpen(!isOpen)}
-                style={{ cursor: 'pointer' }}
-            >
-                <span>{selectedOption?.label || 'Select...'}</span>
-                <svg
-                    style={{
-                        width: '1.25rem',
-                        height: '1.25rem',
-                        transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                        transition: 'transform 0.2s',
-                    }}
-                    fill="none"
-                    viewBox="0 0 20 20"
+        <div className="relative">
+            <label className="block text-sm font-semibold mb-2 text-slate-700">{label}</label>
+            <div className="relative">
+                <select
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm appearance-none cursor-pointer pr-10 font-medium"
                 >
-                    <path
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="1.5"
-                        d="M6 8l4 4 4-4"
-                    />
-                </svg>
-            </button>
-
-            {isOpen && (
-                <div
-                    className="hide-scrollbar"
-                    style={{
-                        position: 'absolute',
-                        top: '100%',
-                        left: 0,
-                        right: 0,
-                        marginTop: '0.5rem',
-                        maxHeight: '15rem',
-                        overflowY: 'auto',
-                        zIndex: 50,
-                        background: 'rgba(30, 27, 75, 0.95)',
-                        backdropFilter: 'blur(16px)',
-                        WebkitBackdropFilter: 'blur(16px)',
-                        border: '1px solid rgba(147, 51, 234, 0.5)',
-                        borderRadius: '0.75rem',
-                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4)',
-                        scrollbarWidth: 'none',
-                        msOverflowStyle: 'none',
-                    }}
-                >
-                    {options.map((option) => (
-                        <button
-                            key={option.value}
-                            type="button"
-                            onClick={() => {
-                                onChange(option.value);
-                                setIsOpen(false);
-                            }}
-                            style={{
-                                width: '100%',
-                                padding: '0.75rem 1rem',
-                                textAlign: 'left',
-                                border: 'none',
-                                background: option.value === value ? 'rgba(147, 51, 234, 0.4)' : 'transparent',
-                                color: 'white',
-                                cursor: 'pointer',
-                                transition: 'background 0.2s',
-                                fontSize: '1rem',
-                                fontWeight: '500',
-                            }}
-                            onMouseEnter={(e) => {
-                                if (option.value !== value) {
-                                    e.currentTarget.style.background = 'rgba(147, 51, 234, 0.2)';
-                                }
-                            }}
-                            onMouseLeave={(e) => {
-                                if (option.value !== value) {
-                                    e.currentTarget.style.background = 'transparent';
-                                } else {
-                                    e.currentTarget.style.background = 'rgba(147, 51, 234, 0.4)';
-                                }
-                            }}
-                        >
-                            {option.label}
-                        </button>
+                    {options.map((opt) => (
+                        <option key={opt.value} value={opt.value} className="text-slate-900 bg-white">
+                            {opt.label}
+                        </option>
                     ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
                 </div>
-            )}
+            </div>
         </div>
     );
 }

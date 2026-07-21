@@ -5,7 +5,7 @@ interface CellProps {
     cell: Cell;
     onClick: () => void;
     isCurrentPlayerCell: boolean;
-    currentPlayerColor: string;
+    currentPlayerColor: string | null;
     ownerColor: string | null;
     disabled: boolean;
     isExploding?: boolean;
@@ -59,47 +59,61 @@ export default function CellComponent({
     }, [isExploding]);
 
     // Add trail effect when orbs added
-    const [showTrail, setShowTrail] = useState(false);
     useEffect(() => {
         if (isAdding) {
-            setShowTrail(true);
-            const timer = setTimeout(() => setShowTrail(false), 400);
+            const timer = setTimeout(() => {}, 400);
             return () => clearTimeout(timer);
         }
     }, [isAdding]);
+
+    // Handle hex to rgb for rgba conversion
+    const hexToRgba = (hex: string, alpha: number) => {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    };
+
+    const bgColor = ownerColor 
+        ? hexToRgba(ownerColor, 0.15) 
+        : 'rgba(255, 255, 255, 0.6)';
+
+    const borderColor = ownerColor 
+        ? hexToRgba(ownerColor, 0.4) 
+        : 'rgba(226, 232, 240, 1)'; // slate-200
 
     return (
         <button
             onClick={handleClick}
             aria-disabled={!canPlace}
-            className={`cell ${isCritical ? 'cell-critical' : ''} ${isExploding ? 'cell-exploding' : ''} ${shake ? 'cell-shake' : ''}`}
+            className={`cell relative w-full aspect-square rounded-xl md:rounded-2xl border transition-all duration-300 overflow-visible
+                ${isCritical ? 'cell-critical' : ''} 
+                ${isExploding ? 'cell-exploding z-20' : ''} 
+                ${shake ? 'cell-shake' : ''}
+                ${!canPlace ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer hover:shadow-lg hover:-translate-y-0.5 hover:z-10'}`
+            }
             style={{
-                backgroundColor: ownerColor ? ownerColor : 'rgba(255, 255, 255, 0.05)',
-                cursor: canPlace ? 'pointer' : 'not-allowed',
-                opacity: canPlace ? 1 : 0.5,
-                position: 'relative',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                borderRadius: '0.5rem',
-                aspectRatio: '1',
-                transition: 'all 0.2s',
-                overflow: 'visible',
+                backgroundColor: bgColor,
+                borderColor: borderColor,
+                boxShadow: ownerColor ? `0 4px 20px -2px ${hexToRgba(ownerColor, 0.2)}` : '0 2px 10px -2px rgba(0,0,0,0.05)'
             }}
             onMouseEnter={(e) => {
                 if (canPlace) {
-                    e.currentTarget.style.backgroundColor = ownerColor || currentPlayerColor;
-                    e.currentTarget.style.transform = 'scale(1.05)';
+                    const hoverColor = ownerColor || currentPlayerColor || '#cbd5e1';
+                    e.currentTarget.style.backgroundColor = hexToRgba(hoverColor, 0.25);
+                    e.currentTarget.style.borderColor = hexToRgba(hoverColor, 0.8);
                 }
             }}
             onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = ownerColor || 'rgba(255, 255, 255, 0.05)';
-                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.backgroundColor = bgColor;
+                e.currentTarget.style.borderColor = borderColor;
             }}
         >
             {/* Explosion particles */}
             {particles.map((particle) => (
                 <div
                     key={particle.id}
-                    className="explosion-particle"
+                    className="explosion-particle z-30"
                     style={{
                         '--tx': `${particle.tx}px`,
                         '--ty': `${particle.ty}px`,
@@ -108,61 +122,30 @@ export default function CellComponent({
                 />
             ))}
 
-            {/* Orb addition trail effect */}
-            {showTrail && (
-                <div
-                    className="orb-trail"
-                    style={{
-                        background: `radial-gradient(circle, ${ownerColor || 'rgba(255, 255, 255, 0.5)'} 0%, transparent 70%)`,
-                    }}
-                />
-            )}
-
             {cell.orbCount > 0 && (
                 <div
-                    className={`orbs-container ${isAdding ? 'orb-adding' : ''}`}
-                    style={{
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        gap: '0.125rem',
-                        flexWrap: 'wrap',
-                        padding: '0.25rem',
-                        width: '100%',
-                        height: '100%',
-                    }}
+                    className={`absolute inset-0 flex flex-wrap items-center justify-center gap-[2px] md:gap-1 p-1 md:p-2 ${isAdding ? 'orb-adding' : ''}`}
                 >
-                    {Array.from({ length: Math.min(cell.orbCount, 4) }).map((_, i) => (
-                        <div
-                            key={i}
-                            className="orb"
-                            style={{
-                                backgroundColor: 'white',
-                                width: cell.orbCount === 1 ? '1.5rem' : '1rem',
-                                height: cell.orbCount === 1 ? '1.5rem' : '1rem',
-                                borderRadius: '50%',
-                                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
-                            }}
-                        />
-                    ))}
-                    {cell.orbCount > 4 && (
-                        <div
-                            className="orb-count"
-                            style={{
-                                position: 'absolute',
-                                top: '0.25rem',
-                                right: '0.25rem',
-                                backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                                color: 'white',
-                                fontSize: '0.75rem',
-                                padding: '0.125rem 0.375rem',
-                                borderRadius: '0.25rem',
-                                fontWeight: 'bold',
-                            }}
-                        >
-                            {cell.orbCount}
-                        </div>
-                    )}
+                    {Array.from({ length: Math.min(cell.orbCount, 4) }).map((_, i) => {
+                        // Orb size calculation
+                        let sizeClass = 'w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5';
+                        if (cell.orbCount === 1) {
+                            sizeClass = 'w-5 h-5 md:w-7 md:h-7 lg:w-8 lg:h-8';
+                        } else if (cell.orbCount === 2) {
+                            sizeClass = 'w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6';
+                        }
+
+                        return (
+                            <div
+                                key={i}
+                                className={`orb rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.25)] ${sizeClass} transition-all duration-300`}
+                                style={{
+                                    backgroundColor: ownerColor || '#fff',
+                                    backgroundImage: `radial-gradient(circle at 30% 30%, white 0%, ${ownerColor || '#fff'} 70%)`
+                                }}
+                            />
+                        );
+                    })}
                 </div>
             )}
         </button>

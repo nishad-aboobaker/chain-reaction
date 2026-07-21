@@ -44,7 +44,7 @@ export default function Grid() {
     }, [explosionSequence, clearExplosionSequence]);
 
     if (!gameState || !room) {
-        return <div className="text-slate-800 text-center">Loading grid...</div>;
+        return <div className="text-slate-500 font-medium animate-pulse">Loading grid...</div>;
     }
 
     const { grid } = gameState;
@@ -66,39 +66,39 @@ export default function Grid() {
     };
 
     return (
-        <div
-            className="grid-container"
-            style={{
-                display: 'grid',
-                gridTemplateColumns: `repeat(${grid.cols}, 1fr)`,
-                gap: '0.5rem',
-                padding: '1rem',
-                maxWidth: '800px',
-                margin: '0 auto',
-            }}
-        >
-            {grid.cells.map((row, rowIndex) =>
-                row.map((cell, colIndex) => {
-                    const cellOwner = room.players.find(p => p.id === cell.ownerId);
-                    const isCurrentPlayerCell = cell.ownerId === currentPlayer.id;
-                    const cellKey = `${rowIndex}-${colIndex}`;
-                    const animationType = animatingCells.get(cellKey);
+        <div className="bg-white/80 backdrop-blur-xl p-4 md:p-6 lg:p-8 rounded-[2.5rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] border border-white/60">
+            <div
+                className="grid gap-2 sm:gap-3 lg:gap-4"
+                style={{
+                    gridTemplateColumns: `repeat(${grid.cols}, minmax(0, 1fr))`,
+                    width: '100%',
+                    maxWidth: '850px',
+                    aspectRatio: `${grid.cols} / ${grid.rows}`
+                }}
+            >
+                {grid.cells.map((row, rowIndex) =>
+                    row.map((cell, colIndex) => {
+                        const cellOwner = room.players.find(p => p.id === cell.ownerId);
+                        const isCurrentPlayerCell = cell.ownerId === currentPlayer?.id;
+                        const cellKey = `${rowIndex}-${colIndex}`;
+                        const animationType = animatingCells.get(cellKey);
 
-                    return (
-                        <CellComponent
-                            key={cellKey}
-                            cell={cell}
-                            onClick={() => handleCellClick(rowIndex, colIndex)}
-                            isCurrentPlayerCell={isCurrentPlayerCell}
-                            currentPlayerColor={currentPlayer.color}
-                            ownerColor={cellOwner?.color || null}
-                            disabled={!myTurn || gameState.isGameOver}
-                            isExploding={animationType === 'explode'}
-                            isAdding={animationType === 'add'}
-                        />
-                    );
-                })
-            )}
+                        return (
+                            <CellComponent
+                                key={cellKey}
+                                cell={cell}
+                                onClick={() => handleCellClick(rowIndex, colIndex)}
+                                isCurrentPlayerCell={isCurrentPlayerCell}
+                                currentPlayerColor={currentPlayer?.color || null}
+                                ownerColor={cellOwner?.color || null}
+                                disabled={!myTurn || gameState.isGameOver}
+                                isExploding={animationType === 'explode'}
+                                isAdding={animationType === 'add'}
+                            />
+                        );
+                    })
+                )}
+            </div>
         </div>
     );
 }
