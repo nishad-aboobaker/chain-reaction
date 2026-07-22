@@ -52,7 +52,7 @@ export default function Lobby() {
 
     const allPlayersReady = room.players.every(p => p.isReady);
     const canStart = isHost() && room.players.length >= 2 && allPlayersReady;
-    const gameModeName = room.settings.gameMode === 'XOX' ? '❌⭕ XOX (Tic-Tac-Toe)' : '💥 Chain Reaction';
+    const gameModeName = room.settings.gameMode === 'XOX' ? 'XOX (Tic-Tac-Toe)' : 'Chain Reaction';
 
     return (
         <div className="min-h-screen flex items-center justify-center p-3 sm:p-6 relative overflow-hidden bg-slate-50">

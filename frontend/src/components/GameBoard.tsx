@@ -3,6 +3,7 @@ import { useAppStore } from '../store/appStore';
 import { useMultiplayerStore } from '../store/multiplayerStore';
 import { socketService } from '../services/socketService';
 import Grid from './Grid';
+import { TrophyIcon, HandshakeIcon } from './Icons';
 
 export default function GameBoard() {
     const { setScreen } = useAppStore();
@@ -203,10 +204,10 @@ export default function GameBoard() {
                 {gameOver ? (
                     <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-2xl border border-slate-100 text-center z-20 max-w-md w-[92vw] sm:w-full">
                         <div 
-                            className="w-16 h-16 sm:w-24 sm:h-24 rounded-full mx-auto mb-4 shadow-lg flex items-center justify-center text-3xl sm:text-4xl text-white font-black"
+                            className="w-16 h-16 sm:w-20 sm:h-20 rounded-full mx-auto mb-4 shadow-lg flex items-center justify-center text-white"
                             style={{ backgroundColor: isDraw ? '#64748b' : (room.players.find(p => p.id === winner)?.color || '#94a3b8') }}
                         >
-                            {isDraw ? '🤝' : '👑'}
+                            {isDraw ? <HandshakeIcon className="w-9 h-9" /> : <TrophyIcon className="w-9 h-9" />}
                         </div>
                         <h2 className="text-2xl sm:text-4xl font-black text-slate-900 mb-2 tracking-tight">
                             {isDraw ? "It's a Draw!" : `${room.players.find(p => p.id === winner)?.name || 'Someone'} Wins!`}
@@ -218,10 +219,13 @@ export default function GameBoard() {
                         <div className="space-y-2.5 sm:space-y-3">
                             {isHost() ? (
                                 <button
-                                    className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition-all text-base shadow-lg cursor-pointer"
+                                    className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition-all text-base shadow-lg cursor-pointer flex items-center justify-center gap-2"
                                     onClick={handlePlayAgain}
                                 >
-                                    🔄 Play Again
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                    Play Again
                                 </button>
                             ) : (
                                 <div className="w-full py-3.5 bg-slate-100 text-slate-500 rounded-xl font-semibold text-sm border border-slate-200">

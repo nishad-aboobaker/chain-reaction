@@ -98,7 +98,7 @@ export default function CreateRoom() {
                         Create Room
                     </h2>
                     <span className="px-3 py-1 bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs sm:text-sm font-bold rounded-full">
-                        {gameMode === 'XOX' ? '❌⭕ XOX Tic-Tac-Toe' : '💥 Chain Reaction'}
+                        {gameMode === 'XOX' ? 'XOX Tic-Tac-Toe' : 'Chain Reaction'}
                     </span>
                 </div>
 
