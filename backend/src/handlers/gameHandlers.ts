@@ -126,7 +126,6 @@ export function registerGameHandlers(socket: TypedSocket, io: TypedServer) {
                 return;
             }
 
-            // Only host can trigger play-again
             if (room.hostId !== playerId) {
                 socket.emit('error', 'Only host can restart the game');
                 return;
@@ -143,7 +142,7 @@ export function registerGameHandlers(socket: TypedSocket, io: TypedServer) {
         }
     });
 
-    // Place orb with rate limiting
+    // Place orb or XOX symbol with rate limiting
     socket.on('place-orb', (row: number, col: number) => {
         const roomCode = socket.data.roomCode;
         const playerId = socket.data.playerId;
@@ -153,8 +152,7 @@ export function registerGameHandlers(socket: TypedSocket, io: TypedServer) {
             return;
         }
 
-        // Rate limit: 30 moves per minute
-        if (!socketRateLimiter.checkLimit(playerId, 'place-orb', 30)) {
+        if (!socketRateLimiter.checkLimit(playerId, 'place-orb', 60)) {
             socket.emit('error', 'Too many moves, please slow down');
             return;
         }
@@ -167,12 +165,13 @@ export function registerGameHandlers(socket: TypedSocket, io: TypedServer) {
                 return;
             }
 
-            // Check if it's player's turn
             const currentPlayer = room.players[room.gameState.currentTurnIndex];
             if (currentPlayer.id !== playerId) {
                 socket.emit('error', 'Not your turn');
                 return;
             }
+
+            const gameMode = room.settings.gameMode || 'CHAIN_REACTION';
 
             // Validate move
             const validation = isValidMove(
@@ -180,52 +179,61 @@ export function registerGameHandlers(socket: TypedSocket, io: TypedServer) {
                 row,
                 col,
                 playerId,
-                room.gameState.roundNumber
+                gameMode
             );
 
             if (!validation.valid) {
-                socket.emit('error', 'Invalid move');
-                logger.warn(`Invalid move attempt from ${playerId}: ${validation.error}`);
+                socket.emit('error', validation.error || 'Invalid move');
                 return;
             }
 
-            // Place orb and get explosion sequence
+            // Place move
             const { gameState: newGameState, explosionSequence } = placeOrb(
                 room.gameState,
                 row,
                 col,
-                playerId
+                playerId,
+                currentPlayer.symbol,
+                gameMode
             );
-
-            // Check for player elimination
-            const updatedPlayers = checkPlayerElimination(newGameState, room.players);
-            updatePlayers(roomCode, updatedPlayers);
 
             // Clear turn timer on move
             clearTurnTimer(roomCode);
 
-            // Check win condition
-            const { isGameOver, winnerId } = checkWinCondition(newGameState, updatedPlayers);
+            // Check win/gameover condition
+            if (gameMode === 'XOX') {
+                if (newGameState.isGameOver) {
+                    updateGameState(roomCode, newGameState);
+                    const finalRoom = getRoom(roomCode);
+                    io.to(roomCode).emit('game-state-updated', newGameState);
+                    io.to(roomCode).emit('room-updated', finalRoom!);
+                    io.to(roomCode).emit('game-over', newGameState.winnerId || (newGameState.isDraw ? 'DRAW' : ''));
+                    logger.info(`XOX Game over in room ${roomCode}, winner: ${newGameState.winnerId || 'DRAW'}`);
+                    return;
+                }
+            } else {
+                // Chain Reaction mode player elimination & win condition
+                const updatedPlayers = checkPlayerElimination(newGameState, room.players);
+                updatePlayers(roomCode, updatedPlayers);
 
-            if (isGameOver && winnerId) {
-                newGameState.isGameOver = true;
-                newGameState.winnerId = winnerId;
-                updateGameState(roomCode, newGameState);
+                const { isGameOver, winnerId } = checkWinCondition(newGameState, updatedPlayers);
 
-                // Get final room state
-                const finalRoom = getRoom(roomCode);
+                if (isGameOver && winnerId) {
+                    newGameState.isGameOver = true;
+                    newGameState.winnerId = winnerId;
+                    updateGameState(roomCode, newGameState);
 
-                // Notify game over
-                io.to(roomCode).emit('game-state-updated', newGameState);
-                io.to(roomCode).emit('room-updated', finalRoom!);
-                io.to(roomCode).emit('game-over', winnerId);
-
-                logger.info(`Game over in room ${roomCode}, winner: ${winnerId}`);
-                return;
+                    const finalRoom = getRoom(roomCode);
+                    io.to(roomCode).emit('game-state-updated', newGameState);
+                    io.to(roomCode).emit('room-updated', finalRoom!);
+                    io.to(roomCode).emit('game-over', winnerId);
+                    logger.info(`Chain Reaction Game over in room ${roomCode}, winner: ${winnerId}`);
+                    return;
+                }
             }
 
             // Advance turn
-            const { currentTurnIndex, roundNumber } = nextTurn(newGameState, updatedPlayers);
+            const { currentTurnIndex, roundNumber } = nextTurn(newGameState, room.players);
             newGameState.currentTurnIndex = currentTurnIndex;
             newGameState.roundNumber = roundNumber;
             newGameState.turnStartTime = Date.now();
@@ -233,29 +241,25 @@ export function registerGameHandlers(socket: TypedSocket, io: TypedServer) {
             // Update game state
             updateGameState(roomCode, newGameState);
 
-            // Start turn timer for the next player
+            // Start turn timer for next player
             startTurnTimer(roomCode, () => onTurnTimerExpired(roomCode, io));
 
-            // Get updated room
             const updatedRoom = getRoom(roomCode);
 
-            // Emit explosion sequence for animations
             if (explosionSequence.length > 0) {
                 io.to(roomCode).emit('explosion-sequence', explosionSequence);
             }
 
-            // Emit updated game state
             io.to(roomCode).emit('game-state-updated', newGameState);
             io.to(roomCode).emit('room-updated', updatedRoom!);
 
-            // Emit turn change
-            const nextPlayer = updatedPlayers[currentTurnIndex];
+            const nextPlayer = room.players[currentTurnIndex];
             io.to(roomCode).emit('turn-changed', nextPlayer.id);
 
             logger.info(`Move made in room ${roomCode} at (${row}, ${col}) by ${playerId}`);
         } catch (error) {
             logger.error('Error placing orb:', error);
-            socket.emit('error', 'Failed to place orb');
+            socket.emit('error', 'Failed to place move');
         }
     });
 
@@ -266,7 +270,6 @@ export function registerGameHandlers(socket: TypedSocket, io: TypedServer) {
 
         if (!roomCode || !playerId) return;
 
-        // Rate limit: 10 messages per minute
         if (!socketRateLimiter.checkLimit(playerId, 'send-message', 10)) {
             socket.emit('error', 'Too many messages, please slow down');
             return;
@@ -283,7 +286,7 @@ export function registerGameHandlers(socket: TypedSocket, io: TypedServer) {
                 id: `${Date.now()}-${playerId}`,
                 playerId,
                 playerName: player.name,
-                message: sanitizeInput(message), // Sanitize to prevent XSS
+                message: sanitizeInput(message),
                 timestamp: Date.now(),
                 isSystem: false,
             };

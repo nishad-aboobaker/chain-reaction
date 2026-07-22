@@ -50,6 +50,9 @@ export default function GameBoard() {
         );
     }
 
+    const isDraw = winner === 'DRAW' || gameState.isDraw;
+    const gameModeTitle = room.settings.gameMode === 'XOX' ? 'XOX (Tic-Tac-Toe)' : 'Chain Reaction';
+
     return (
         <div className="h-[100dvh] w-full flex flex-col md:flex-row relative overflow-hidden bg-slate-50 select-none">
             {/* Background elements */}
@@ -60,7 +63,7 @@ export default function GameBoard() {
             <div className="md:hidden bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-xs z-20 shrink-0">
                 <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <h1 className="text-base font-extrabold text-slate-900 tracking-tight">Chain Reaction</h1>
+                        <h1 className="text-base font-extrabold text-slate-900 tracking-tight">{gameModeTitle}</h1>
                         <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">
                             Round {gameState.roundNumber}
                         </span>
@@ -98,7 +101,7 @@ export default function GameBoard() {
                                     style={{ backgroundColor: player.color }}
                                 />
                                 <span className="max-w-[65px] truncate">{player.name}</span>
-                                <span className="text-[10px] opacity-80">{isEliminated ? '✕' : `${player.orbCount}`}</span>
+                                {player.symbol && <span className="text-indigo-600 font-extrabold ml-0.5">({player.symbol})</span>}
                             </div>
                         );
                     })}
@@ -109,7 +112,7 @@ export default function GameBoard() {
             <div className="hidden md:flex w-80 lg:w-96 bg-white border-r border-slate-200 flex-col shadow-sm z-10 shrink-0 h-full">
                 <div className="p-6 border-b border-slate-100 flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Chain Reaction</h1>
+                        <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">{gameModeTitle}</h1>
                         <div className="text-sm font-medium text-slate-500 mt-1 flex items-center gap-2">
                             <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
                             Round: {gameState.roundNumber}
@@ -149,10 +152,10 @@ export default function GameBoard() {
                                 
                                 <div className="flex items-center gap-3">
                                     <div
-                                        className={`w-10 h-10 rounded-full shadow-inner ring-4 ring-white flex items-center justify-center ${isEliminated ? 'grayscale' : ''}`}
+                                        className={`w-10 h-10 rounded-full shadow-inner ring-4 ring-white flex items-center justify-center font-black text-lg text-white ${isEliminated ? 'grayscale' : ''}`}
                                         style={{ backgroundColor: player.color }}
                                     >
-                                        {isEliminated && <span className="text-white font-bold">✕</span>}
+                                        {player.symbol || (isEliminated ? '✕' : '')}
                                     </div>
                                     <div>
                                         <div className="font-bold text-slate-900 flex items-center gap-2">
@@ -162,7 +165,7 @@ export default function GameBoard() {
                                             )}
                                         </div>
                                         <div className="text-xs font-medium text-slate-500 mt-0.5">
-                                            {isEliminated ? 'Eliminated' : `${player.orbCount} orbs`}
+                                            {isEliminated ? 'Eliminated' : room.settings.gameMode === 'XOX' ? `Symbol: ${player.symbol}` : `${player.orbCount} orbs`}
                                         </div>
                                     </div>
                                 </div>
@@ -177,9 +180,11 @@ export default function GameBoard() {
                         <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Current Turn</div>
                         <div className="flex items-center gap-3">
                             <div 
-                                className="w-8 h-8 rounded-full shadow-sm"
+                                className="w-8 h-8 rounded-full shadow-sm flex items-center justify-center text-white font-black text-sm"
                                 style={{ backgroundColor: room.players[gameState.currentTurnIndex].color }}
-                            ></div>
+                            >
+                                {room.players[gameState.currentTurnIndex].symbol}
+                            </div>
                             <span className="font-bold text-lg text-slate-900">
                                 {room.players[gameState.currentTurnIndex].name}'s Turn
                             </span>
@@ -193,21 +198,21 @@ export default function GameBoard() {
                 )}
             </div>
 
-            {/* Main Game Board Area (Fills remaining mobile height without scrolling) */}
+            {/* Main Game Board Area */}
             <div className="flex-1 flex items-center justify-center p-2 sm:p-4 md:p-8 relative min-h-0 min-w-0 overflow-hidden">
-                {gameOver && winner ? (
+                {gameOver ? (
                     <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-2xl border border-slate-100 text-center z-20 max-w-md w-[92vw] sm:w-full">
                         <div 
-                            className="w-16 h-16 sm:w-24 sm:h-24 rounded-full mx-auto mb-4 shadow-lg flex items-center justify-center text-3xl sm:text-4xl"
-                            style={{ backgroundColor: room.players.find(p => p.id === winner)?.color || '#94a3b8' }}
+                            className="w-16 h-16 sm:w-24 sm:h-24 rounded-full mx-auto mb-4 shadow-lg flex items-center justify-center text-3xl sm:text-4xl text-white font-black"
+                            style={{ backgroundColor: isDraw ? '#64748b' : (room.players.find(p => p.id === winner)?.color || '#94a3b8') }}
                         >
-                            👑
+                            {isDraw ? '🤝' : '👑'}
                         </div>
                         <h2 className="text-2xl sm:text-4xl font-black text-slate-900 mb-2 tracking-tight">
-                            {room.players.find(p => p.id === winner)?.name || 'Someone'} Wins!
+                            {isDraw ? "It's a Draw!" : `${room.players.find(p => p.id === winner)?.name || 'Someone'} Wins!`}
                         </h2>
                         <p className="text-slate-500 mb-6 text-xs sm:text-base font-medium">
-                            Dominated the board with a massive chain reaction.
+                            {isDraw ? 'A fierce match resulting in a tie.' : 'Dominated the grid and took the victory!'}
                         </p>
                         
                         <div className="space-y-2.5 sm:space-y-3">

@@ -18,7 +18,7 @@ export default function CellComponent({
     disabled,
 }: CellProps) {
     const canPlace = (!disabled) && (cell.ownerId === null || isCurrentPlayerCell);
-    const isCritical = cell.orbCount >= cell.criticalMass - 1 && cell.ownerId !== null;
+    const isCritical = cell.orbCount >= cell.criticalMass - 1 && cell.ownerId !== null && !cell.symbol;
 
     const handleClick = () => {
         if (disabled || !canPlace) return;
@@ -65,7 +65,19 @@ export default function CellComponent({
                 e.currentTarget.style.backgroundColor = bgColor;
             }}
         >
-            {cell.orbCount > 0 && (
+            {/* Render XOX Symbol */}
+            {cell.symbol ? (
+                <div 
+                    className="font-black text-3xl sm:text-5xl md:text-6xl flex items-center justify-center transform transition-transform scale-100 animate-bounce-in"
+                    style={{
+                        color: ownerColor || '#3b82f6',
+                        textShadow: ownerColor ? `0 2px 12px ${hexToRgba(ownerColor, 0.4)}` : 'none'
+                    }}
+                >
+                    {cell.symbol}
+                </div>
+            ) : cell.orbCount > 0 && (
+                /* Render Orbs for Chain Reaction */
                 <div className="absolute inset-0 flex items-center justify-center p-[10%] pointer-events-none">
                     <div className="w-full h-full relative">
                         {Array.from({ length: Math.min(cell.orbCount, 4) }).map((_, i) => {

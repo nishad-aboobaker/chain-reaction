@@ -12,16 +12,21 @@ export const PLAYER_COLORS = [
 
 // Grid Sizes
 export const GRID_SIZES = {
+    XOX_3X3: { rows: 3, cols: 3 },
     SMALL: { rows: 5, cols: 7 },
     MEDIUM: { rows: 6, cols: 9 },
     LARGE: { rows: 7, cols: 11 },
 } as const;
+
+// Game Modes
+export type GameMode = 'CHAIN_REACTION' | 'XOX';
 
 // Player Interface
 export interface Player {
     id: string;
     name: string;
     color: string;
+    symbol?: string; // 'X', 'O', etc. for XOX mode
     isActive: boolean;
     isReady: boolean;
     isHost: boolean;
@@ -34,6 +39,7 @@ export interface Cell {
     col: number;
     orbCount: number;
     ownerId: string | null;
+    symbol?: string | null; // For XOX mode
     criticalMass: number;
 }
 
@@ -46,6 +52,7 @@ export interface Grid {
 
 // Room Settings
 export interface RoomSettings {
+    gameMode: GameMode;
     gridSize: keyof typeof GRID_SIZES;
     maxPlayers: number;
     turnTimer: number | null; // seconds, null for no timer
@@ -69,6 +76,7 @@ export interface GameState {
     currentTurnIndex: number;
     roundNumber: number;
     isGameOver: boolean;
+    isDraw?: boolean;
     winnerId: string | null;
     turnStartTime: number | null;
 }

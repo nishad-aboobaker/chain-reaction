@@ -52,6 +52,7 @@ export default function Lobby() {
 
     const allPlayersReady = room.players.every(p => p.isReady);
     const canStart = isHost() && room.players.length >= 2 && allPlayersReady;
+    const gameModeName = room.settings.gameMode === 'XOX' ? '❌⭕ XOX (Tic-Tac-Toe)' : '💥 Chain Reaction';
 
     return (
         <div className="min-h-screen flex items-center justify-center p-3 sm:p-6 relative overflow-hidden bg-slate-50">
@@ -67,7 +68,7 @@ export default function Lobby() {
                         <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
                             Game Lobby
                         </h2>
-                        <p className="text-xs sm:text-sm text-slate-500 mt-0.5">Get ready to start the chain reaction.</p>
+                        <p className="text-xs sm:text-sm text-slate-500 mt-0.5">{gameModeName}</p>
                     </div>
                     
                     <div className="w-full sm:w-auto flex items-center justify-between sm:justify-end bg-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl shadow-sm border border-slate-100">
@@ -159,6 +160,10 @@ export default function Lobby() {
                                 Game Settings
                             </h3>
                             <div className="space-y-2.5 sm:space-y-4 text-xs sm:text-sm">
+                                <div className="flex justify-between items-center pb-2 border-b border-slate-200">
+                                    <span className="text-slate-500 font-medium">Game Mode</span>
+                                    <span className="font-bold text-slate-800">{room.settings.gameMode === 'XOX' ? 'XOX' : 'Chain Reaction'}</span>
+                                </div>
                                 <div className="flex justify-between items-center pb-2 border-b border-slate-200">
                                     <span className="text-slate-500 font-medium">Grid Size</span>
                                     <span className="font-bold text-slate-800">{room.settings.gridSize}</span>

@@ -277,7 +277,7 @@ export function startGame(
     }
 
     // Initialize game state
-    room.gameState = initializeGameState(room.players, room.settings.gridSize);
+    room.gameState = initializeGameState(room.players, room.settings);
     touchRoom(code);
     rooms.set(code, room);
 
