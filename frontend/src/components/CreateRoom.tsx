@@ -7,12 +7,14 @@ import type { RoomSettings, GameMode } from '../../../shared/types';
 import { GRID_SIZES } from '../../../shared/types';
 
 export default function CreateRoom() {
-    const { setScreen, setPlayerName, setRoomCode, setPlayerToken, playerName } = useAppStore();
+    const { setScreen, setPlayerName, setRoomCode, setPlayerToken, playerName, selectedGameMode } = useAppStore();
     const initialize = useMultiplayerStore((state) => state.initialize);
+    
+    const initialMode: GameMode = selectedGameMode || 'CHAIN_REACTION';
     const [name, setName] = useState(playerName);
-    const [gameMode, setGameMode] = useState<GameMode>('CHAIN_REACTION');
-    const [gridSize, setGridSize] = useState<keyof typeof GRID_SIZES>('MEDIUM');
-    const [maxPlayers, setMaxPlayers] = useState('4');
+    const [gameMode, setGameMode] = useState<GameMode>(initialMode);
+    const [gridSize, setGridSize] = useState<keyof typeof GRID_SIZES>(initialMode === 'XOX' ? 'XOX_3X3' : 'MEDIUM');
+    const [maxPlayers, setMaxPlayers] = useState(initialMode === 'XOX' ? '2' : '4');
     const [turnTimer, setTurnTimer] = useState('60');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
