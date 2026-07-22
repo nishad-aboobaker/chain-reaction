@@ -22,6 +22,7 @@
       radial-gradient(at 100% 0%, hsla(339,49%,30%,0.05) 0, transparent 50%);
     color: #0f172a;
     font-family: var(--font-sans);
+    touch-action: manipulation;
   }
 }
 
@@ -36,82 +37,22 @@
   }
 }
 
-/* Game cell styles and animations */
-.cell {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 60px;
-  @apply transition-colors duration-300;
-}
-
-.orbs-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  align-items: center;
-  justify-content: center;
-  padding: 0.5rem;
-  position: relative;
-}
-
-.orb {
-  animation: bounce-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.15), inset 0 -2px 6px rgba(0,0,0,0.1);
-}
-
-@keyframes bounce-in {
-  0% { transform: scale(0); opacity: 0; }
-  50% { transform: scale(1.2); }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-@keyframes explode {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.8); opacity: 0.6; }
-  100% { transform: scale(2.5); opacity: 0; }
-}
-
 @keyframes critical-pulse {
-  0%, 100% { box-shadow: 0 0 10px currentColor, inset 0 0 8px currentColor; }
-  50% { box-shadow: 0 0 18px currentColor, inset 0 0 14px currentColor; transform: scale(1.02); }
-}
-
-@keyframes particle-burst {
-  0% { transform: translate(0, 0) scale(1); opacity: 1; }
-  100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
-}
-
-.explosion-particle {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  background: currentColor;
-  border-radius: 50%;
-  pointer-events: none;
-  animation: particle-burst 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
-}
-
-.cell-exploding {
-  animation: explode 0.5s ease-out forwards;
-  z-index: 10;
+  0%, 100% { box-shadow: 0 0 8px currentColor, inset 0 0 6px currentColor; }
+  50% { box-shadow: 0 0 14px currentColor, inset 0 0 10px currentColor; transform: scale(1.01); }
 }
 
 .cell-critical {
   animation: critical-pulse 1.5s ease-in-out infinite;
 }
 
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  20% { transform: translateX(-4px); }
-  40% { transform: translateX(4px); }
-  60% { transform: translateX(-3px); }
-  80% { transform: translateX(3px); }
+/* Hide scrollbar utility */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
 }
-
-.cell-shake {
-  animation: shake 0.4s ease-in-out;
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Custom Scrollbar for better UI */

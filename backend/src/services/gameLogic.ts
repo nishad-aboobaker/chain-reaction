@@ -122,8 +122,8 @@ export function processExplosions(
     for (const explosion of explosions) {
         const { row, col, ownerId } = explosion;
 
-        // Calculate base delay strictly based on chain reaction depth for sequential popping
-        const baseDelay = depth * 500;
+        // Set delay to 0 for instant popping without delay
+        const baseDelay = 0;
 
         // Record explosion for animation
         explosionSequence.push({

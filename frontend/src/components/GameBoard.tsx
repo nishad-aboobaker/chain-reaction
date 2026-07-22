@@ -23,7 +23,7 @@ export default function GameBoard() {
         };
     }, []);
 
-    // If game state gets reset (e.g. host clicks Play Again), return to lobby
+    // Return to lobby when game state gets reset by host
     useEffect(() => {
         if (room && room.gameState === null) {
             setScreen('lobby');
@@ -44,30 +44,30 @@ export default function GameBoard() {
 
     if (!room || !gameState) {
         return (
-            <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-slate-50">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+            <div className="h-[100dvh] w-full flex items-center justify-center relative overflow-hidden bg-slate-50">
+                <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen flex flex-col md:flex-row relative overflow-hidden bg-slate-50">
+        <div className="h-[100dvh] w-full flex flex-col md:flex-row relative overflow-hidden bg-slate-50 select-none">
             {/* Background elements */}
             <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-blue-300/10 blur-[100px] -z-10" />
             <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-400/10 blur-[100px] -z-10" />
 
-            {/* Mobile Header & Player Bar (Visible on < md) */}
-            <div className="md:hidden bg-white border-b border-slate-200 shadow-sm z-20 shrink-0">
-                <div className="p-3 border-b border-slate-100 flex items-center justify-between">
+            {/* Mobile Compact Header & Player Bar (Visible on < md) */}
+            <div className="md:hidden bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-xs z-20 shrink-0">
+                <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <h1 className="text-lg font-extrabold text-slate-900 tracking-tight">Chain Reaction</h1>
-                        <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">
-                            R{gameState.roundNumber}
+                        <h1 className="text-base font-extrabold text-slate-900 tracking-tight">Chain Reaction</h1>
+                        <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">
+                            Round {gameState.roundNumber}
                         </span>
                     </div>
                     <button
                         onClick={handleLeave}
-                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-1 text-slate-400 hover:text-red-500 rounded-lg transition-colors cursor-pointer"
                         title="Leave Game"
                     >
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -76,8 +76,8 @@ export default function GameBoard() {
                     </button>
                 </div>
 
-                {/* Mobile Horizontal Player Strip */}
-                <div className="px-3 py-2 flex items-center gap-2 overflow-x-auto scrollbar-none">
+                {/* Mobile Horizontal Player Bar */}
+                <div className="px-2 py-1.5 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
                     {room.players.map((player, index) => {
                         const isCurrentTurn = gameState.currentTurnIndex === index;
                         const isEliminated = !player.isActive;
@@ -85,20 +85,20 @@ export default function GameBoard() {
                         return (
                             <div
                                 key={player.id}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-full border shrink-0 transition-all text-xs font-bold ${
+                                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border shrink-0 transition-all text-xs font-bold ${
                                     isCurrentTurn
-                                        ? 'border-indigo-500 bg-indigo-50 text-indigo-900 shadow-sm ring-2 ring-indigo-400/30'
+                                        ? 'border-indigo-500 bg-indigo-50 text-indigo-900 shadow-xs ring-1 ring-indigo-400/40'
                                         : isEliminated
-                                            ? 'border-slate-100 bg-slate-50 text-slate-400 grayscale opacity-50'
+                                            ? 'border-slate-100 bg-slate-50 text-slate-400 opacity-50'
                                             : 'border-slate-200 bg-white text-slate-700'
                                 }`}
                             >
                                 <div
-                                    className="w-3.5 h-3.5 rounded-full shadow-inner ring-1 ring-white shrink-0"
+                                    className="w-3 h-3 rounded-full shadow-inner ring-1 ring-white shrink-0"
                                     style={{ backgroundColor: player.color }}
                                 />
-                                <span className="max-w-[70px] truncate">{player.name}</span>
-                                <span className="text-[10px] opacity-75">{isEliminated ? '✕' : `${player.orbCount}`}</span>
+                                <span className="max-w-[65px] truncate">{player.name}</span>
+                                <span className="text-[10px] opacity-80">{isEliminated ? '✕' : `${player.orbCount}`}</span>
                             </div>
                         );
                     })}
@@ -106,7 +106,7 @@ export default function GameBoard() {
             </div>
 
             {/* Desktop Sidebar (Visible on >= md) */}
-            <div className="hidden md:flex w-80 lg:w-96 bg-white border-r border-slate-200 flex-col shadow-sm z-10 shrink-0">
+            <div className="hidden md:flex w-80 lg:w-96 bg-white border-r border-slate-200 flex-col shadow-sm z-10 shrink-0 h-full">
                 <div className="p-6 border-b border-slate-100 flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Chain Reaction</h1>
@@ -117,7 +117,7 @@ export default function GameBoard() {
                     </div>
                     <button
                         onClick={handleLeave}
-                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                         title="Leave Game"
                     >
                         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -126,56 +126,54 @@ export default function GameBoard() {
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex-1 overflow-y-auto p-6 space-y-3">
                     <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">Players</h2>
-                    <div className="space-y-3">
-                        {room.players.map((player, index) => {
-                            const isCurrentTurn = gameState.currentTurnIndex === index;
-                            const isEliminated = !player.isActive;
+                    {room.players.map((player, index) => {
+                        const isCurrentTurn = gameState.currentTurnIndex === index;
+                        const isEliminated = !player.isActive;
 
-                            return (
-                                <div
-                                    key={player.id}
-                                    className={`relative p-4 rounded-xl border-2 transition-all duration-300 flex items-center justify-between ${
-                                        isCurrentTurn
-                                            ? 'border-indigo-500 shadow-md bg-indigo-50/50'
-                                            : isEliminated
-                                                ? 'border-slate-100 bg-slate-50 opacity-60'
-                                                : 'border-slate-100 bg-white hover:border-slate-200'
-                                    }`}
-                                >
-                                    {isCurrentTurn && (
-                                        <div className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-3 h-8 bg-indigo-500 rounded-r-md"></div>
-                                    )}
-                                    
-                                    <div className="flex items-center gap-3">
-                                        <div
-                                            className={`w-10 h-10 rounded-full shadow-inner ring-4 ring-white flex items-center justify-center ${isEliminated ? 'grayscale' : ''}`}
-                                            style={{ backgroundColor: player.color }}
-                                        >
-                                            {isEliminated && <span className="text-white font-bold">✕</span>}
+                        return (
+                            <div
+                                key={player.id}
+                                className={`relative p-4 rounded-xl border-2 transition-all duration-300 flex items-center justify-between ${
+                                    isCurrentTurn
+                                        ? 'border-indigo-500 shadow-md bg-indigo-50/50'
+                                        : isEliminated
+                                            ? 'border-slate-100 bg-slate-50 opacity-60'
+                                            : 'border-slate-100 bg-white hover:border-slate-200'
+                                }`}
+                            >
+                                {isCurrentTurn && (
+                                    <div className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-3 h-8 bg-indigo-500 rounded-r-md"></div>
+                                )}
+                                
+                                <div className="flex items-center gap-3">
+                                    <div
+                                        className={`w-10 h-10 rounded-full shadow-inner ring-4 ring-white flex items-center justify-center ${isEliminated ? 'grayscale' : ''}`}
+                                        style={{ backgroundColor: player.color }}
+                                    >
+                                        {isEliminated && <span className="text-white font-bold">✕</span>}
+                                    </div>
+                                    <div>
+                                        <div className="font-bold text-slate-900 flex items-center gap-2">
+                                            <span className="truncate max-w-[100px]">{player.name}</span>
+                                            {player.id === currentPlayer?.id && (
+                                                <span className="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded uppercase font-bold">You</span>
+                                            )}
                                         </div>
-                                        <div>
-                                            <div className="font-bold text-slate-900 flex items-center gap-2">
-                                                <span className="truncate max-w-[100px]">{player.name}</span>
-                                                {player.id === currentPlayer?.id && (
-                                                    <span className="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded uppercase font-bold">You</span>
-                                                )}
-                                            </div>
-                                            <div className="text-xs font-medium text-slate-500 mt-0.5">
-                                                {isEliminated ? 'Eliminated' : `${player.orbCount} orbs`}
-                                            </div>
+                                        <div className="text-xs font-medium text-slate-500 mt-0.5">
+                                            {isEliminated ? 'Eliminated' : `${player.orbCount} orbs`}
                                         </div>
                                     </div>
                                 </div>
-                            );
-                        })}
-                    </div>
+                            </div>
+                        );
+                    })}
                 </div>
                 
                 {/* Current Turn indicator at bottom of sidebar */}
                 {!gameOver && room.players[gameState.currentTurnIndex] && (
-                    <div className="p-6 bg-slate-100 border-t border-slate-200">
+                    <div className="p-6 bg-slate-100 border-t border-slate-200 mt-auto">
                         <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Current Turn</div>
                         <div className="flex items-center gap-3">
                             <div 
@@ -195,52 +193,50 @@ export default function GameBoard() {
                 )}
             </div>
 
-            {/* Game Area */}
-            <div className="flex-1 flex flex-col items-center justify-center p-2 sm:p-4 md:p-8 relative min-h-0">
-                <div className="w-full h-full flex flex-col items-center justify-center">
-                    {gameOver && winner ? (
-                        <div className="animate-bounce-in bg-white p-6 sm:p-8 rounded-3xl shadow-2xl border border-slate-100 text-center z-20 max-w-md w-[92vw] sm:w-full">
-                            <div 
-                                className="w-20 h-20 sm:w-24 sm:h-24 rounded-full mx-auto mb-4 sm:mb-6 shadow-lg flex items-center justify-center text-3xl sm:text-4xl"
-                                style={{ backgroundColor: room.players.find(p => p.id === winner)?.color || '#94a3b8' }}
-                            >
-                                👑
-                            </div>
-                            <h2 className="text-2xl sm:text-4xl font-black text-slate-900 mb-2 tracking-tight">
-                                {room.players.find(p => p.id === winner)?.name || 'Someone'} Wins!
-                            </h2>
-                            <p className="text-slate-500 mb-6 text-sm sm:text-base font-medium">
-                                Dominated the board with a massive chain reaction.
-                            </p>
-                            
-                            <div className="space-y-3">
-                                {isHost() ? (
-                                    <button
-                                        className="w-full py-3.5 sm:py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition-all duration-300 text-base sm:text-lg shadow-lg hover:-translate-y-0.5 cursor-pointer"
-                                        onClick={handlePlayAgain}
-                                    >
-                                        🔄 Play Again
-                                    </button>
-                                ) : (
-                                    <div className="w-full py-3.5 sm:py-4 bg-slate-100 text-slate-500 rounded-xl font-semibold text-sm sm:text-base border border-slate-200">
-                                        Waiting for host to restart game...
-                                    </div>
-                                )}
-
+            {/* Main Game Board Area (Fills remaining mobile height without scrolling) */}
+            <div className="flex-1 flex items-center justify-center p-2 sm:p-4 md:p-8 relative min-h-0 min-w-0 overflow-hidden">
+                {gameOver && winner ? (
+                    <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-2xl border border-slate-100 text-center z-20 max-w-md w-[92vw] sm:w-full">
+                        <div 
+                            className="w-16 h-16 sm:w-24 sm:h-24 rounded-full mx-auto mb-4 shadow-lg flex items-center justify-center text-3xl sm:text-4xl"
+                            style={{ backgroundColor: room.players.find(p => p.id === winner)?.color || '#94a3b8' }}
+                        >
+                            👑
+                        </div>
+                        <h2 className="text-2xl sm:text-4xl font-black text-slate-900 mb-2 tracking-tight">
+                            {room.players.find(p => p.id === winner)?.name || 'Someone'} Wins!
+                        </h2>
+                        <p className="text-slate-500 mb-6 text-xs sm:text-base font-medium">
+                            Dominated the board with a massive chain reaction.
+                        </p>
+                        
+                        <div className="space-y-2.5 sm:space-y-3">
+                            {isHost() ? (
                                 <button
-                                    className="w-full py-3 sm:py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-all duration-300 text-sm sm:text-base cursor-pointer"
-                                    onClick={handleLeave}
+                                    className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition-all text-base shadow-lg cursor-pointer"
+                                    onClick={handlePlayAgain}
                                 >
-                                    Leave Game
+                                    🔄 Play Again
                                 </button>
-                            </div>
+                            ) : (
+                                <div className="w-full py-3.5 bg-slate-100 text-slate-500 rounded-xl font-semibold text-sm border border-slate-200">
+                                    Waiting for host to restart game...
+                                </div>
+                            )}
+
+                            <button
+                                className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-all text-sm cursor-pointer"
+                                onClick={handleLeave}
+                            >
+                                Leave Game
+                            </button>
                         </div>
-                    ) : (
-                        <div className="w-full h-full max-h-[85vh] flex items-center justify-center">
-                            <Grid />
-                        </div>
-                    )}
-                </div>
+                    </div>
+                ) : (
+                    <div className="w-full h-full max-h-full flex items-center justify-center overflow-hidden">
+                        <Grid />
+                    </div>
+                )}
             </div>
         </div>
     );
