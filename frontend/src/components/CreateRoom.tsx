@@ -10,25 +10,13 @@ export default function CreateRoom() {
     const { setScreen, setPlayerName, setRoomCode, setPlayerToken, playerName, selectedGameMode } = useAppStore();
     const initialize = useMultiplayerStore((state) => state.initialize);
     
-    const initialMode: GameMode = selectedGameMode || 'CHAIN_REACTION';
+    const gameMode: GameMode = selectedGameMode || 'CHAIN_REACTION';
     const [name, setName] = useState(playerName);
-    const [gameMode, setGameMode] = useState<GameMode>(initialMode);
-    const [gridSize, setGridSize] = useState<keyof typeof GRID_SIZES>(initialMode === 'XOX' ? 'XOX_3X3' : 'MEDIUM');
-    const [maxPlayers, setMaxPlayers] = useState(initialMode === 'XOX' ? '2' : '4');
+    const [gridSize, setGridSize] = useState<keyof typeof GRID_SIZES>(gameMode === 'XOX' ? 'XOX_3X3' : 'MEDIUM');
+    const [maxPlayers, setMaxPlayers] = useState(gameMode === 'XOX' ? '2' : '4');
     const [turnTimer, setTurnTimer] = useState('60');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
-
-    const handleGameModeChange = (mode: GameMode) => {
-        setGameMode(mode);
-        if (mode === 'XOX') {
-            setGridSize('XOX_3X3');
-            setMaxPlayers('2');
-        } else {
-            setGridSize('MEDIUM');
-            setMaxPlayers('4');
-        }
-    };
 
     const handleCreate = (e: React.FormEvent) => {
         e.preventDefault();
@@ -44,8 +32,8 @@ export default function CreateRoom() {
 
         const settings: RoomSettings = {
             gameMode,
-            gridSize,
-            maxPlayers: parseInt(maxPlayers),
+            gridSize: gameMode === 'XOX' ? 'XOX_3X3' : gridSize,
+            maxPlayers: gameMode === 'XOX' ? 2 : parseInt(maxPlayers),
             turnTimer: parseInt(turnTimer) > 0 ? parseInt(turnTimer) : null,
         };
 
@@ -64,14 +52,7 @@ export default function CreateRoom() {
         });
     };
 
-    const gameModeOptions = [
-        { value: 'CHAIN_REACTION', label: '💥 Chain Reaction' },
-        { value: 'XOX', label: '❌⭕ XOX (Tic-Tac-Toe)' },
-    ];
-
-    const gridSizeOptions = gameMode === 'XOX' ? [
-        { value: 'XOX_3X3', label: 'Classic (3×3)' },
-    ] : [
+    const gridSizeOptions = [
         { value: 'SMALL', label: 'Small (7×5)' },
         { value: 'MEDIUM', label: 'Medium (9×6)' },
         { value: 'LARGE', label: 'Large (11×7)' },
@@ -112,9 +93,14 @@ export default function CreateRoom() {
                     Back to Menu
                 </button>
 
-                <h2 className="text-3xl sm:text-4xl font-extrabold mb-6 text-slate-900 tracking-tight">
-                    Create Room
-                </h2>
+                <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+                        Create Room
+                    </h2>
+                    <span className="px-3 py-1 bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs sm:text-sm font-bold rounded-full">
+                        {gameMode === 'XOX' ? '❌⭕ XOX Tic-Tac-Toe' : '💥 Chain Reaction'}
+                    </span>
+                </div>
 
                 <form onSubmit={handleCreate} className="space-y-5">
                     <div>
@@ -129,40 +115,45 @@ export default function CreateRoom() {
                         />
                     </div>
 
-                    <div>
-                        <CustomSelect
-                            label="Game Mode"
-                            options={gameModeOptions}
-                            value={gameMode}
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            onChange={(val) => handleGameModeChange(val as any)}
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <CustomSelect
-                            label="Grid Size"
-                            options={gridSizeOptions}
-                            value={gridSize}
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            onChange={(val) => setGridSize(val as any)}
-                        />
-
-                        <CustomSelect
-                            label="Max Players"
-                            options={maxPlayersOptions}
-                            value={maxPlayers}
-                            onChange={setMaxPlayers}
-                        />
-
-                        <div className="md:col-span-2">
+                    {gameMode === 'XOX' ? (
+                        /* XOX Mode Simplified Info Banner */
+                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-slate-600 text-sm space-y-1">
+                            <div className="flex justify-between font-semibold text-slate-800">
+                                <span>Grid Size:</span>
+                                <span className="text-indigo-600 font-bold">Classic (3×3)</span>
+                            </div>
+                            <div className="flex justify-between font-semibold text-slate-800">
+                                <span>Players:</span>
+                                <span className="text-indigo-600 font-bold">2 Players (1v1)</span>
+                            </div>
+                        </div>
+                    ) : (
+                        /* Chain Reaction Options */
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <CustomSelect
-                                label="Turn Timer"
-                                options={turnTimerOptions}
-                                value={turnTimer}
-                                onChange={setTurnTimer}
+                                label="Grid Size"
+                                options={gridSizeOptions}
+                                value={gridSize}
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                onChange={(val) => setGridSize(val as any)}
+                            />
+
+                            <CustomSelect
+                                label="Max Players"
+                                options={maxPlayersOptions}
+                                value={maxPlayers}
+                                onChange={setMaxPlayers}
                             />
                         </div>
+                    )}
+
+                    <div>
+                        <CustomSelect
+                            label="Turn Timer"
+                            options={turnTimerOptions}
+                            value={turnTimer}
+                            onChange={setTurnTimer}
+                        />
                     </div>
 
                     {error && (
