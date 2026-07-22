@@ -11,6 +11,7 @@ import {
     startGame,
     updateGameState,
     updatePlayers,
+    resetGame,
     startTurnTimer,
     clearTurnTimer,
 } from '../services/roomManager';
@@ -105,6 +106,40 @@ export function registerGameHandlers(socket: TypedSocket, io: TypedServer) {
         } catch (error) {
             logger.error('Error starting game:', error);
             socket.emit('error', 'Failed to start game');
+        }
+    });
+
+    // Play again (Reset game and return to lobby)
+    socket.on('play-again', () => {
+        const roomCode = socket.data.roomCode;
+        const playerId = socket.data.playerId;
+
+        if (!roomCode || !playerId) {
+            socket.emit('error', 'Not in a room');
+            return;
+        }
+
+        try {
+            const room = getRoom(roomCode);
+            if (!room) {
+                socket.emit('error', 'Room not found');
+                return;
+            }
+
+            // Only host can trigger play-again
+            if (room.hostId !== playerId) {
+                socket.emit('error', 'Only host can restart the game');
+                return;
+            }
+
+            const result = resetGame(roomCode);
+            if (result.success && result.room) {
+                io.to(roomCode).emit('room-updated', result.room);
+                logger.info(`Game reset for replay in room: ${roomCode}`);
+            }
+        } catch (error) {
+            logger.error('Error resetting game for play-again:', error);
+            socket.emit('error', 'Failed to restart game');
         }
     });
 

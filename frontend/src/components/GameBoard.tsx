@@ -6,7 +6,7 @@ import Grid from './Grid';
 
 export default function GameBoard() {
     const { setScreen } = useAppStore();
-    const { room, gameState, getCurrentPlayer, cleanup } = useMultiplayerStore();
+    const { room, gameState, getCurrentPlayer, isHost, cleanup } = useMultiplayerStore();
     const [gameOver, setGameOver] = useState(false);
     const [winner, setWinner] = useState<string | null>(null);
 
@@ -23,16 +23,29 @@ export default function GameBoard() {
         };
     }, []);
 
+    // If game state gets reset (e.g. host clicks Play Again), return to lobby
+    useEffect(() => {
+        if (room && room.gameState === null) {
+            setScreen('lobby');
+        }
+    }, [room, room?.gameState, setScreen]);
+
     const handleLeave = () => {
         socketService.leaveRoom();
         cleanup();
         setScreen('menu');
     };
 
+    const handlePlayAgain = () => {
+        if (isHost()) {
+            socketService.playAgain();
+        }
+    };
+
     if (!room || !gameState) {
         return (
-            <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
-                <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+            <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-slate-50">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
             </div>
         );
     }
@@ -43,8 +56,57 @@ export default function GameBoard() {
             <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-blue-300/10 blur-[100px] -z-10" />
             <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-400/10 blur-[100px] -z-10" />
 
-            {/* Sidebar (Players & Info) */}
-            <div className="w-full md:w-80 lg:w-96 bg-white border-b md:border-b-0 md:border-r border-slate-200 flex flex-col shadow-sm z-10 shrink-0">
+            {/* Mobile Header & Player Bar (Visible on < md) */}
+            <div className="md:hidden bg-white border-b border-slate-200 shadow-sm z-20 shrink-0">
+                <div className="p-3 border-b border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <h1 className="text-lg font-extrabold text-slate-900 tracking-tight">Chain Reaction</h1>
+                        <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">
+                            R{gameState.roundNumber}
+                        </span>
+                    </div>
+                    <button
+                        onClick={handleLeave}
+                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Leave Game"
+                    >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                    </button>
+                </div>
+
+                {/* Mobile Horizontal Player Strip */}
+                <div className="px-3 py-2 flex items-center gap-2 overflow-x-auto scrollbar-none">
+                    {room.players.map((player, index) => {
+                        const isCurrentTurn = gameState.currentTurnIndex === index;
+                        const isEliminated = !player.isActive;
+
+                        return (
+                            <div
+                                key={player.id}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-full border shrink-0 transition-all text-xs font-bold ${
+                                    isCurrentTurn
+                                        ? 'border-indigo-500 bg-indigo-50 text-indigo-900 shadow-sm ring-2 ring-indigo-400/30'
+                                        : isEliminated
+                                            ? 'border-slate-100 bg-slate-50 text-slate-400 grayscale opacity-50'
+                                            : 'border-slate-200 bg-white text-slate-700'
+                                }`}
+                            >
+                                <div
+                                    className="w-3.5 h-3.5 rounded-full shadow-inner ring-1 ring-white shrink-0"
+                                    style={{ backgroundColor: player.color }}
+                                />
+                                <span className="max-w-[70px] truncate">{player.name}</span>
+                                <span className="text-[10px] opacity-75">{isEliminated ? '✕' : `${player.orbCount}`}</span>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Desktop Sidebar (Visible on >= md) */}
+            <div className="hidden md:flex w-80 lg:w-96 bg-white border-r border-slate-200 flex-col shadow-sm z-10 shrink-0">
                 <div className="p-6 border-b border-slate-100 flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Chain Reaction</h1>
@@ -134,26 +196,44 @@ export default function GameBoard() {
             </div>
 
             {/* Game Area */}
-            <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 relative min-h-0">
+            <div className="flex-1 flex flex-col items-center justify-center p-2 sm:p-4 md:p-8 relative min-h-0">
                 <div className="w-full h-full flex flex-col items-center justify-center">
                     {gameOver && winner ? (
-                        <div className="mb-8 animate-bounce-in bg-white p-8 rounded-3xl shadow-2xl border border-slate-100 text-center z-20 max-w-md w-full">
+                        <div className="animate-bounce-in bg-white p-6 sm:p-8 rounded-3xl shadow-2xl border border-slate-100 text-center z-20 max-w-md w-[92vw] sm:w-full">
                             <div 
-                                className="w-24 h-24 rounded-full mx-auto mb-6 shadow-lg flex items-center justify-center text-4xl"
+                                className="w-20 h-20 sm:w-24 sm:h-24 rounded-full mx-auto mb-4 sm:mb-6 shadow-lg flex items-center justify-center text-3xl sm:text-4xl"
                                 style={{ backgroundColor: room.players.find(p => p.id === winner)?.color || '#94a3b8' }}
                             >
                                 👑
                             </div>
-                            <h2 className="text-4xl font-black text-slate-900 mb-2 tracking-tight">
+                            <h2 className="text-2xl sm:text-4xl font-black text-slate-900 mb-2 tracking-tight">
                                 {room.players.find(p => p.id === winner)?.name || 'Someone'} Wins!
                             </h2>
-                            <p className="text-slate-500 mb-8 font-medium">Dominated the board with a massive chain reaction.</p>
-                            <button
-                                className="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold transition-all duration-300 text-lg shadow-lg hover:-translate-y-1"
-                                onClick={handleLeave}
-                            >
-                                Back to Lobby
-                            </button>
+                            <p className="text-slate-500 mb-6 text-sm sm:text-base font-medium">
+                                Dominated the board with a massive chain reaction.
+                            </p>
+                            
+                            <div className="space-y-3">
+                                {isHost() ? (
+                                    <button
+                                        className="w-full py-3.5 sm:py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition-all duration-300 text-base sm:text-lg shadow-lg hover:-translate-y-0.5 cursor-pointer"
+                                        onClick={handlePlayAgain}
+                                    >
+                                        🔄 Play Again
+                                    </button>
+                                ) : (
+                                    <div className="w-full py-3.5 sm:py-4 bg-slate-100 text-slate-500 rounded-xl font-semibold text-sm sm:text-base border border-slate-200">
+                                        Waiting for host to restart game...
+                                    </div>
+                                )}
+
+                                <button
+                                    className="w-full py-3 sm:py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-all duration-300 text-sm sm:text-base cursor-pointer"
+                                    onClick={handleLeave}
+                                >
+                                    Leave Game
+                                </button>
+                            </div>
                         </div>
                     ) : (
                         <div className="w-full h-full max-h-[85vh] flex items-center justify-center">

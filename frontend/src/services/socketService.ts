@@ -138,6 +138,13 @@ class SocketService {
     }
 
     /**
+     * Request play again (host only)
+     */
+    playAgain() {
+        this.socket?.emit('play-again');
+    }
+
+    /**
      * Place an orb on the board
      */
     placeOrb(row: number, col: number) {

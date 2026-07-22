@@ -92,6 +92,7 @@ export interface ClientToServerEvents {
     'start-game': () => void;
     'place-orb': (row: number, col: number) => void;
     'send-message': (message: string) => void;
+    'play-again': () => void;
 }
 
 // Socket Events (Server -> Client)

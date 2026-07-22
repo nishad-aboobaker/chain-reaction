@@ -285,6 +285,33 @@ export function startGame(
 }
 
 /**
+ * Reset game state in a room for replay
+ */
+export function resetGame(
+    code: string
+): { success: boolean; room?: Room; error?: string } {
+    const room = rooms.get(code);
+
+    if (!room) {
+        return { success: false, error: 'Room not found' };
+    }
+
+    room.gameState = null;
+    room.players = room.players.map(player => ({
+        ...player,
+        isActive: true,
+        isReady: false,
+        orbCount: 0,
+    }));
+
+    clearTurnTimer(code);
+    touchRoom(code);
+    rooms.set(code, room);
+
+    return { success: true, room };
+}
+
+/**
  * Check if auto-start conditions are met (room full + all ready)
  */
 export function shouldAutoStart(room: Room): boolean {

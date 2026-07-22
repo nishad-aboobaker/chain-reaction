@@ -122,10 +122,10 @@ export default function Grid() {
             timeline.kill();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [explosionSequence]); // We explicitly don't want displayGrid or room as dependencies here
+    }, [explosionSequence]);
 
     if (!gameState || !room || !displayGrid) {
-        return <div className="text-slate-500 font-medium animate-pulse">Loading grid...</div>;
+        return <div className="text-slate-500 font-medium animate-pulse text-sm sm:text-base">Loading grid...</div>;
     }
 
     const currentPlayer = room.players[gameState.currentTurnIndex];
@@ -139,18 +139,16 @@ export default function Grid() {
     };
 
     return (
-        <div className="relative bg-white/80 backdrop-blur-xl p-4 md:p-6 lg:p-8 rounded-[2.5rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] border border-white/60">
+        <div className="relative bg-white/80 backdrop-blur-xl p-2.5 sm:p-4 md:p-6 lg:p-8 rounded-2xl sm:rounded-[2.5rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] border border-white/60 w-full max-w-[850px] mx-auto">
             {/* GSAP Flying Orbs Overlay */}
             {flyingOrbs.map(orb => (
                 <GSAPFlyingOrb key={orb.id} orb={orb} cols={displayGrid.cols} rows={displayGrid.rows} />
             ))}
 
             <div
-                className="grid gap-2 sm:gap-3 lg:gap-4 relative z-10"
+                className="grid gap-1.5 sm:gap-2.5 md:gap-4 relative z-10 w-full"
                 style={{
                     gridTemplateColumns: `repeat(${displayGrid.cols}, minmax(0, 1fr))`,
-                    width: '100%',
-                    maxWidth: '850px',
                 }}
             >
                 {displayGrid.cells.map((row, rowIndex) =>
@@ -185,12 +183,6 @@ function GSAPFlyingOrb({ orb, cols, rows }: { orb: FlyingOrb, cols: number, rows
     useEffect(() => {
         if (!orbRef.current) return;
         
-        // Calculate percentages based on grid size
-        // Since we are absolutely positioned in a grid container, we calculate offsets based on gap and cell size.
-        // It's easier to use GSAP's physical pixel translations if we know the container size, 
-        // but since it's responsive, we will rely on flex/grid sizing logic.
-        // A simpler robust way: The exact translate is (to - from) * (100% + gap).
-        
         const dx = orb.toCol - orb.fromCol;
         const dy = orb.toRow - orb.fromRow;
 
@@ -203,8 +195,8 @@ function GSAPFlyingOrb({ orb, cols, rows }: { orb: FlyingOrb, cols: number, rows
                 opacity: 0.8
             }, 
             { 
-                x: `calc(${dx * 100}% + ${dx * 16}px)`, // Approximate gap
-                y: `calc(${dy * 100}% + ${dy * 16}px)`,
+                x: `calc(${dx * 100}% + ${dx * 0.5}rem)`,
+                y: `calc(${dy * 100}% + ${dy * 0.5}rem)`,
                 scale: 1,
                 opacity: 1,
                 duration: 0.35,
@@ -213,7 +205,6 @@ function GSAPFlyingOrb({ orb, cols, rows }: { orb: FlyingOrb, cols: number, rows
         );
     }, [orb]);
 
-    // Calculate initial position based on `from` coords
     const widthPct = 100 / cols;
     const heightPct = 100 / rows;
     
@@ -225,7 +216,7 @@ function GSAPFlyingOrb({ orb, cols, rows }: { orb: FlyingOrb, cols: number, rows
                 top: `${orb.fromRow * heightPct}%`,
                 width: `${widthPct}%`,
                 height: `${heightPct}%`,
-                padding: '10%'
+                padding: '8%'
             }}
         >
             <div 
